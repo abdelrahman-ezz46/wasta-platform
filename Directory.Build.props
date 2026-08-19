@@ -1,0 +1,15 @@
+<Project>
+
+  <!-- Shared build settings. The repo standard is a zero-warning build, and
+       CI enforces it, so warnings are errors everywhere rather than only in
+       the pipeline - a warning that only fails in CI gets discovered late. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

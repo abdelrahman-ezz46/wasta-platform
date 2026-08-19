@@ -1,0 +1,6 @@
+@Wasta.WebApi_HostAddress = http://localhost:5204
+
+GET {{Wasta.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

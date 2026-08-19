@@ -14,18 +14,18 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Restore
-        run: dotnet restore WastaCareerCoach.slnx
+        run: dotnet restore WastaCareerCoach.sln
 
       # Warnings have been driven to zero, so keep them there rather than
       # letting them creep back one PR at a time.
       - name: Build
-        run: dotnet build WastaCareerCoach.slnx --no-restore --warnaserror
+        run: dotnet build WastaCareerCoach.sln --no-restore --warnaserror
 
       - name: Test
-        run: dotnet test WastaCareerCoach.slnx --no-build --verbosity normal
+        run: dotnet test WastaCareerCoach.sln --no-build --verbosity normal
 
   frontend:
     name: Typecheck (TypeScript)

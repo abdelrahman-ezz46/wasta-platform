@@ -18,8 +18,12 @@ Status keys used below:
 
 ## Setup
 
-- [auto] `dotnet build WastaCareerCoach.slnx` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.slnx` — 95 passing (59 Career Coach, 36 Support Chat)
+- [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
+- [auto] `dotnet test WastaCareerCoach.sln` — 123 passing (59 Career Coach, 36 Support Chat,
+  20 platform API integration, 8 architecture)
+- [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
+  not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
+- [auto] Architecture tests fail the build if a layer gains a forbidden dependency
 - [auto] `npx tsc --noEmit` clean in `src/frontend/coach-card` and `src/frontend/chat-widget`
 - [verified] Test doubles live under `tests/`. One deliberate exception: `NullJobListingProvider`
   ships in `src/` as a production null-object default so the chatbot runs before the jobs

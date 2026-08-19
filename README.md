@@ -53,6 +53,10 @@ The migration script is idempotent — the same command works on a fresh or exis
 | `src/Wasta.DevHost` | Runnable harness. Development only — refuses to start elsewhere |
 | `src/frontend/coach-card` | React results-page card |
 | `src/frontend/chat-widget` | React floating chat widget |
+| `src/Wasta.Domain` | Platform domain: entities and business rules. No dependencies at all |
+| `src/Wasta.Application` | Platform use cases, one folder per feature. Defines its own interfaces |
+| `src/Wasta.Infrastructure` | EF Core, repositories, JWT issuing, password hashing |
+| `src/Wasta.WebApi` | The production API. JWT auth, role and resource authorization, OpenAPI |
 | `streamlit/` | Visual preview app for demos (calls the real API) |
 | `docs/TESTING.md` | Acceptance checklist with current verified/blocked status |
 | `docs/KNOWLEDGE-BASE-QUESTIONNAIRE.md` | The questions a product owner must answer to unblock the chatbot |
@@ -112,8 +116,30 @@ The provider's own `Model` is still required — a feature override alone does n
 usable, so a missing base configuration is caught rather than silently half-working. Model IDs are
 deprecated without much notice; check the provider's console when wiring this up.
 
+## The platform backend
+
+Beyond the two AI modules, this repo now holds the platform itself, built in four clean-architecture
+layers with dependencies pointing inward only. [docs/BACKEND-BRIEF.md](docs/BACKEND-BRIEF.md) is the
+build contract; [docs/sql/proposed-platform-schema.sql](docs/sql/proposed-platform-schema.sql) is the
+reviewed data model.
+
+```bash
+docker compose up -d
+dotnet ef database update --project src/Wasta.Infrastructure --startup-project src/Wasta.Infrastructure
+dotnet user-secrets set "Jwt:SigningKey" "<48+ random characters>" --project src/Wasta.WebApi
+dotnet run --project src/Wasta.WebApi
+```
+
+Swagger is at `/swagger` in Development. The API refuses to start without a signing key — a
+predictable default would let anyone mint an admin token.
+
+**Runtime is .NET 9**, pinned by `global.json`, because the deployment host requires it. Note that
+.NET 9 left support in May 2026 and receives no security patches; moving to .NET 10 LTS is the
+single highest-value change available if the host constraint ever lifts.
+
 ## Status
 
-84 tests passing, 0 warnings. **Not yet production-ready** — there is no production host, the
-knowledge base has unresolved TODOs, and the guardrail rows have not been run against a real model.
+123 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication
+and authorization only, the knowledge base has unresolved TODOs, no assessment content exists, and
+the AI guardrail rows have not been run against a real model.
 [docs/TESTING.md](docs/TESTING.md) tracks exactly what is verified and what is not.
