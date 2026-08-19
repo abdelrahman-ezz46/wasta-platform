@@ -31,6 +31,10 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<WastaDbContext>();
         await db.Database.MigrateAsync();
+
+        // Tests run against the same seed the dev host uses, so a test passing
+        // here means the shipped reference data is coherent too.
+        await DatabaseSeeder.SeedAsync(db);
     }
 
     public new async Task DisposeAsync()
@@ -41,6 +45,12 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Not Development. The host seeds itself on startup in Development, and
+        // starting the host is what materialises Services - so the app would
+        // seed against a database this fixture has not migrated yet. Migrating
+        // and seeding is this fixture's job, in that order.
+        builder.UseEnvironment("Testing");
+
         builder.UseSetting("ConnectionStrings:Wasta", _postgres.GetConnectionString());
 
         // A fixed test key. Never a fallback in the app itself - the host throws

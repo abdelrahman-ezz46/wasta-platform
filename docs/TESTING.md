@@ -19,11 +19,30 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 123 passing (59 Career Coach, 36 Support Chat,
-  20 platform API integration, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 148 passing (59 Career Coach, 36 Support Chat,
+  35 platform API integration, 10 domain, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
+
+## Assessment delivery and scoring
+
+- [auto] The answer key never reaches the candidate — asserted on the raw response payload, and the
+  display query never loads `is_correct` at all
+- [auto] A skipped question costs the same as a wrong one; every question on the form is graded
+- [auto] Section percentages average per section, not per question, so a section with more questions
+  does not quietly count for more
+- [auto] Section weights are renormalised over the sections actually on the form
+- [auto] Retake cooldown is 30 days **per track** — blocked on the same track, allowed on another,
+  lifts after 31 days
+- [auto] A submission or an answer save after the deadline is rejected server-side; the client clock
+  is never trusted
+- [auto] The percentile is withheld below the configured minimum cohort (default 50)
+- [auto] Another seeker's attempt returns **404, not 403**, on read, submit, and results
+- [auto] An option belonging to a different question is refused
+- [auto] Submitting twice is refused; results are unavailable until submission
+- [verified] The whole flow exercised against the running API and real Postgres: start, fetch,
+  answer, submit, score 100% with bands and per-section feedback, percentile suppressed
 - [auto] `npx tsc --noEmit` clean in `src/frontend/coach-card` and `src/frontend/chat-widget`
 - [verified] Test doubles live under `tests/`. One deliberate exception: `NullJobListingProvider`
   ships in `src/` as a production null-object default so the chatbot runs before the jobs

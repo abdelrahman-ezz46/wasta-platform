@@ -1,5 +1,4 @@
 using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
 using Wasta.Application.Common;
 using Wasta.Application.Features.Auth;
 
@@ -95,30 +94,5 @@ public static class AuthEndpoints
     private static IResult ValidationProblem(FluentValidation.Results.ValidationResult validation) =>
         Results.ValidationProblem(validation.ToDictionary());
 
-    /// <summary>
-    /// Maps an application error code onto a status. Authentication failures are
-    /// all 401 with one message, so the response cannot be used to work out
-    /// which email addresses exist.
-    /// </summary>
-    private static IResult ToResponse(Result<AuthResult> result)
-    {
-        if (result.IsSuccess)
-        {
-            return Results.Ok(result.Value);
-        }
-
-        var (status, title) = result.Error.Code switch
-        {
-            "auth.email_taken" or "company.name_taken" => (StatusCodes.Status409Conflict, "Conflict"),
-            "auth.invalid_credentials" or "auth.invalid_refresh_token" or "auth.refresh_reused"
-                => (StatusCodes.Status401Unauthorized, "Unauthorized"),
-            _ => (StatusCodes.Status400BadRequest, "Bad request"),
-        };
-
-        return Results.Problem(
-            title: title,
-            detail: result.Error.Message,
-            statusCode: status,
-            extensions: new Dictionary<string, object?> { ["code"] = result.Error.Code });
-    }
+    private static IResult ToResponse(Result<AuthResult> result) => ProblemMapping.ToResponse(result);
 }

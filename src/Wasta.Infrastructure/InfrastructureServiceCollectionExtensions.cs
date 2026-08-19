@@ -38,6 +38,11 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuthorizationQueries, AuthorizationQueries>();
         services.AddScoped<Application.Features.Me.IMeQueries, MeQueries>();
+        services.AddScoped<IAssessmentRepository, AssessmentRepository>();
+        services.AddScoped<IAttemptRepository, AttemptRepository>();
+
+        services.Configure<Application.Features.Assessments.AssessmentOptions>(
+            configuration.GetSection(Application.Features.Assessments.AssessmentOptions.SectionName));
 
         return services;
     }

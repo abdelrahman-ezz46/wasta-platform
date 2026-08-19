@@ -98,6 +98,13 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Reference data and a placeholder assessment, so the flow is exercisable
+    // before real content exists. Idempotent, and Development-only: production
+    // content is administered, not seeded on boot.
+    using var scope = app.Services.CreateScope();
+    var seedDb = scope.ServiceProvider.GetRequiredService<Wasta.Infrastructure.Persistence.WastaDbContext>();
+    await Wasta.Infrastructure.Persistence.DatabaseSeeder.SeedAsync(seedDb);
 }
 
 app.UseAuthentication();
@@ -105,6 +112,7 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapMeEndpoints();
+app.MapAssessmentEndpoints();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")
