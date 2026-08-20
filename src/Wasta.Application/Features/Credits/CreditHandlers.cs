@@ -1,6 +1,7 @@
 using Wasta.Application.Abstractions;
 using Wasta.Application.Common;
 using Wasta.Domain.Companies;
+using Wasta.Application.Features.Notifications;
 using Wasta.Domain.Credits;
 
 namespace Wasta.Application.Features.Credits;
@@ -71,7 +72,9 @@ public class ApproveCompanyHandler(
     ICreditRepository credits,
     ICreditQueries queries,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    INotificationService notifications,
+    INotificationRecipients recipients)
 {
     public async Task<Result> HandleAsync(ApproveCompanyCommand command, CancellationToken ct = default)
     {
@@ -108,6 +111,15 @@ public class ApproveCompanyHandler(
                     now));
             }
 
+            var recipientId = await recipients.UserIdForCompanyAsync(command.CompanyId, token);
+            if (recipientId is not null)
+            {
+                notifications.Queue(
+                    recipientId.Value,
+                    NotificationKinds.CompanyApproved,
+                    new { companyId = command.CompanyId, companyName = company.Name });
+            }
+
             await unitOfWork.SaveChangesAsync(token);
             return Result.Success();
         }, ct);
@@ -117,7 +129,9 @@ public class ApproveCompanyHandler(
 public class RejectCompanyHandler(
     ICompanyRepositoryForAdmin companies,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    INotificationService notifications,
+    INotificationRecipients recipients)
 {
     public async Task<Result> HandleAsync(RejectCompanyCommand command, CancellationToken ct = default)
     {
@@ -128,6 +142,16 @@ public class RejectCompanyHandler(
         }
 
         company.Reject(command.AdminUserId, command.Note, clock.UtcNow);
+
+        var rejectedRecipient = await recipients.UserIdForCompanyAsync(command.CompanyId, ct);
+        if (rejectedRecipient is not null)
+        {
+            notifications.Queue(
+                rejectedRecipient.Value,
+                NotificationKinds.CompanyRejected,
+                new { companyId = command.CompanyId, companyName = company.Name, note = command.Note });
+        }
+
         await unitOfWork.SaveChangesAsync(ct);
 
         return Result.Success();
@@ -138,7 +162,9 @@ public class ReviewTopUpHandler(
     ICreditRepository credits,
     ICreditQueries queries,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    INotificationService notifications,
+    INotificationRecipients recipients)
 {
     public async Task<Result> HandleAsync(ReviewTopUpCommand command, CancellationToken ct = default)
     {
@@ -182,6 +208,21 @@ public class ReviewTopUpHandler(
             await unitOfWork.SaveChangesAsync(token);
 
             request.Approve(command.AdminUserId, entry.Id, now);
+
+            var recipientId = await recipients.UserIdForCompanyAsync(request.CompanyId, token);
+            if (recipientId is not null)
+            {
+                notifications.Queue(
+                    recipientId.Value,
+                    NotificationKinds.CreditsIssued,
+                    new
+                    {
+                        requestId = request.Id,
+                        credits = request.CreditsRequested,
+                        balance = entry.BalanceAfter,
+                    });
+            }
+
             await unitOfWork.SaveChangesAsync(token);
 
             return Result.Success();

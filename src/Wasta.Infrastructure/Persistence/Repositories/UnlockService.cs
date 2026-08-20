@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Wasta.Application.Features.TalentPool;
+using System.Text.Json;
+using Wasta.Application.Features.Notifications;
+using Wasta.Domain.Audit;
 using Wasta.Domain.Credits;
 
 namespace Wasta.Infrastructure.Persistence.Repositories;
@@ -76,6 +79,23 @@ public sealed class UnlockService(WastaDbContext db, Wasta.Application.Abstracti
 
             var unlock = new ProfileUnlock(companyId, jobSeekerId, entry.Id, now);
             db.ProfileUnlocks.Add(unlock);
+
+            // The seeker is told who unlocked them, matching the "Companies that
+            // unlocked your profile" list. Queued inside this transaction, so it
+            // cannot survive a rolled-back charge.
+            var seekerUserId = await db.JobSeekers
+                .Where(js => js.Id == jobSeekerId).Select(js => (long?)js.UserId).FirstOrDefaultAsync(ct);
+            var companyName = await db.Companies
+                .Where(c => c.Id == companyId).Select(c => c.Name).FirstOrDefaultAsync(ct);
+
+            if (seekerUserId is not null)
+            {
+                db.Notifications.Add(new Notification(
+                    seekerUserId.Value,
+                    NotificationKinds.ProfileUnlocked,
+                    JsonSerializer.Serialize(new { companyId, companyName }),
+                    now));
+            }
 
             try
             {

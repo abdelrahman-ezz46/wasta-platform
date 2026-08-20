@@ -83,6 +83,10 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
         builder.UseSetting("FileStorage:RootPath", _uploadRoot);
 
+        // The dispatcher runs on a timer. Tests drive a batch directly instead,
+        // so a delivery assertion is deterministic rather than a race.
+        builder.UseSetting("Notifications:Enabled", "false");
+
         builder.UseSetting("Jwt:Issuer", "wasta");
         builder.UseSetting("Jwt:Audience", "wasta-api");
     }

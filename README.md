@@ -139,15 +139,20 @@ single highest-value change available if the host constraint ever lifts.
 
 ## Status
 
-211 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
+230 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
 authorization, assessment delivery and scoring, jobs and applications, the talent pool and unlocks,
-credits, admin verification and top-up review, file uploads and rate limiting. Notifications and
-Arabic/RTL are not built.
+credits, admin verification and top-up review, file uploads, rate limiting and notifications.
+Arabic/RTL is not built.
 
-**Uploads are not scanned for malware.** `NoOpVirusScanner` reports every file clean without looking
-at it; the host logs a warning about this on every boot. Students upload CVs that companies download,
-so this is a file-delivery channel between strangers — wire a real scanner behind `IVirusScanner`
-before accepting public uploads. The knowledge base has unresolved TODOs, the seeded assessment items
+Two stand-ins are wired in place of real providers, and the host logs a warning about each on every
+boot:
+
+- **Uploads are not scanned for malware.** `NoOpVirusScanner` reports every file clean without
+  looking at it. Students upload CVs that companies download, so this is a file-delivery channel
+  between strangers — wire a real scanner behind `IVirusScanner` before accepting public uploads.
+- **Notifications are not delivered.** `LoggingNotificationSender` writes to the log instead of
+  sending, so password resets, verification and unlock alerts reach nobody until a provider is wired
+  in behind `INotificationSender`. The knowledge base has unresolved TODOs, the seeded assessment items
 are placeholders rather than a validated instrument, and the AI guardrail rows have not been run
 against a real model.
 [docs/TESTING.md](docs/TESTING.md) tracks exactly what is verified and what is not.

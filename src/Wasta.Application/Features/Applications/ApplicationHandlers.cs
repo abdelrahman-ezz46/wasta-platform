@@ -1,6 +1,7 @@
 using Wasta.Application.Abstractions;
 using Wasta.Application.Common;
 using Wasta.Domain.Applications;
+using Wasta.Application.Features.Notifications;
 using Wasta.Domain.Catalog;
 
 namespace Wasta.Application.Features.Applications;
@@ -145,7 +146,9 @@ public class GetMyApplicationHandler(IJobApplicationRepository applications)
 public class SetApplicationStatusHandler(
     IJobApplicationRepository applications,
     IUnitOfWork unitOfWork,
-    IClock clock)
+    IClock clock,
+    INotificationService notifications,
+    INotificationRecipients recipients)
 {
     public async Task<Result> HandleAsync(SetApplicationStatusCommand command, CancellationToken ct = default)
     {
@@ -182,7 +185,36 @@ public class SetApplicationStatusHandler(
             return Result.Failure("application.status_invalid", "That status does not exist.");
         }
 
+        var recipientId = await recipients.UserIdForSeekerAsync(application.JobSeekerId, ct);
+
+        // Read before mutating, and resolve the new status name separately. The
+        // view query is AsNoTracking, so reading it after SetStatus but before
+        // SaveChanges returns the old status - which would put the wrong status
+        // in the notification.
+        var view = recipientId is null
+            ? null
+            : await applications.GetForSeekerAsync(command.ApplicationId, application.JobSeekerId, ct);
+
+        var newStatusName = recipientId is null
+            ? null
+            : await applications.StatusNameAsync(command.StatusId, ct);
+
         application.SetStatus(command.StatusId, command.Feedback, clock.UtcNow);
+
+        if (recipientId is not null)
+        {
+            notifications.Queue(
+                recipientId.Value,
+                NotificationKinds.ApplicationStatusChanged,
+                new
+                {
+                    applicationId = command.ApplicationId,
+                    jobTitle = view?.JobTitle ?? string.Empty,
+                    companyName = view?.CompanyName ?? string.Empty,
+                    status = newStatusName ?? string.Empty,
+                });
+        }
+
         await unitOfWork.SaveChangesAsync(ct);
         return Result.Success();
     }

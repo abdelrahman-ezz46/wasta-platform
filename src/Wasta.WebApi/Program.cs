@@ -137,6 +137,7 @@ app.MapApplicationEndpoints();
 app.MapTalentPoolEndpoints();
 app.MapAdminEndpoints();
 app.MapFileEndpoints();
+app.MapNotificationEndpoints();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")

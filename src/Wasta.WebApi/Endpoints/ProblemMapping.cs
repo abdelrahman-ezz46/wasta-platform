@@ -17,6 +17,7 @@ public static class ProblemMapping
             // discover which ids exist.
             "attempt.not_found" or "job.not_found" or "application.not_found"
                 or "candidate.not_found" or "company.not_found" or "topup.not_found"
+                or "notification.not_found" or "profile.not_found"
                 => (StatusCodes.Status404NotFound, "Not found"),
 
             "auth.email_taken" or "company.name_taken" => (StatusCodes.Status409Conflict, "Conflict"),

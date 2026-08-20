@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Wasta.Application.Abstractions;
 using Wasta.Infrastructure.Files;
+using Wasta.Infrastructure.Notifications;
 using Wasta.Infrastructure.Identity;
 using Wasta.Infrastructure.Persistence;
 using Wasta.Infrastructure.Persistence.Repositories;
@@ -59,6 +60,19 @@ public static class InfrastructureServiceCollectionExtensions
         // not actually being scanned.
         services.AddSingleton<Application.Features.Files.IVirusScanner, NoOpVirusScanner>();
         services.AddHostedService<VirusScannerStartupCheck>();
+
+        services.Configure<NotificationDispatcherOptions>(
+            configuration.GetSection(NotificationDispatcherOptions.SectionName));
+
+        services.AddScoped<Application.Features.Notifications.INotificationService, NotificationService>();
+        services.AddScoped<Application.Features.Notifications.INotificationRecipients, NotificationRecipients>();
+        services.AddScoped<Application.Features.Notifications.INotificationQueries, NotificationQueries>();
+        services.AddScoped<Application.Features.Notifications.INotificationRepository, NotificationRepository>();
+
+        // Writes to the log rather than sending. The startup check says so.
+        services.AddSingleton<Application.Features.Notifications.INotificationSender, LoggingNotificationSender>();
+        services.AddHostedService<NotificationSenderStartupCheck>();
+        services.AddHostedService<NotificationDispatcher>();
 
         services.Configure<Application.Features.Assessments.AssessmentOptions>(
             configuration.GetSection(Application.Features.Assessments.AssessmentOptions.SectionName));

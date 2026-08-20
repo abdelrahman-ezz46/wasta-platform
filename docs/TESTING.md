@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 211 passing (59 Career Coach, 36 Support Chat,
-  82 platform API integration, 16 application, 10 domain, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 230 passing (59 Career Coach, 36 Support Chat,
+  93 platform API integration, 18 domain, 16 application, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -116,6 +116,29 @@ Status keys used below:
 - [auto] Per-user upload limits are enforced and return 429
 - [verified] Auth is limited per IP and unlocks per company, both configurable under `RateLimits`.
   Behind a proxy these depend on `UseForwardedHeaders`, which is wired
+
+## Notifications
+
+- [auto] Submitting an assessment, being unlocked, an application status change, company approval
+  and rejection, and credits being issued each raise the right notification with the right payload
+- [auto] **A refused unlock leaves no notification behind** — it is written inside the unlock
+  transaction, so a rolled-back charge cannot tell a student they were viewed when nobody paid
+- [auto] The status in an application-status notification is resolved from the new status id, not
+  re-read from the database before the save — a stale read would have reported the previous status
+- [auto] A user sees only their own notifications; someone else's returns 404 on mark-read
+- [auto] Unread counts, mark-one-read and mark-all-read behave
+- [auto] The dispatcher delivers pending notifications and marks them Sent; a second pass does not
+  resend, because a delivered row is no longer pending
+- [auto] Retry and backoff: the first attempt is immediate, each failure widens the delay, the row
+  stays Pending until the attempt cap and only then becomes Failed
+- [verified] End to end against the running API: submitting an assessment created the notification,
+  and the background dispatcher picked it up on its own timer and marked it Sent
+- [blocked] **Notifications are not actually delivered** — `LoggingNotificationSender` writes to the
+  log. *Needs a real email/SMS provider before launch*
+
+> **Never string-match a `jsonb` payload in a test.** Postgres normalises jsonb: it reorders keys and
+> rewrites whitespace, so a substring assertion tests Postgres's formatter rather than your code.
+> Parse the payload and assert on the value.
 - [auto] `npx tsc --noEmit` clean in `src/frontend/coach-card` and `src/frontend/chat-widget`
 - [verified] Test doubles live under `tests/`. One deliberate exception: `NullJobListingProvider`
   ships in `src/` as a production null-object default so the chatbot runs before the jobs

@@ -5,6 +5,7 @@ using Wasta.Application.Features.Assessments;
 using Wasta.Application.Features.Auth;
 using Wasta.Application.Features.Credits;
 using Wasta.Application.Features.Files;
+using Wasta.Application.Features.Notifications;
 using Wasta.Application.Features.Jobs;
 using Wasta.Application.Features.TalentPool;
 
@@ -64,6 +65,11 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<UploadCvHandler>();
         services.AddScoped<UploadApplicationFileHandler>();
         services.AddScoped<UploadCompanyDocumentHandler>();
+
+        services.AddScoped<ListNotificationsHandler>();
+        services.AddScoped<UnreadCountHandler>();
+        services.AddScoped<MarkNotificationReadHandler>();
+        services.AddScoped<MarkAllNotificationsReadHandler>();
 
         return services;
     }

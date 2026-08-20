@@ -370,4 +370,8 @@ public sealed class JobApplicationRepository(WastaDbContext db) : IJobApplicatio
 
     public Task<bool> StatusExistsAsync(int statusId, CancellationToken ct = default) =>
         db.ApplicationStatuses.AnyAsync(s => s.Id == statusId, ct);
+
+    public Task<string?> StatusNameAsync(int statusId, CancellationToken ct = default) =>
+        db.ApplicationStatuses.AsNoTracking()
+            .Where(s => s.Id == statusId).Select(s => (string?)s.Name).FirstOrDefaultAsync(ct);
 }

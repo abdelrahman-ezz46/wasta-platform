@@ -56,4 +56,7 @@ public interface IJobApplicationRepository
     Task<long?> FindOwningCompanyIdAsync(long applicationId, CancellationToken ct = default);
 
     Task<bool> StatusExistsAsync(int statusId, CancellationToken ct = default);
+
+    /// <summary>The display name for a status id, resolved without re-reading the application.</summary>
+    Task<string?> StatusNameAsync(int statusId, CancellationToken ct = default);
 }

@@ -157,6 +157,12 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         b.HasKey(x => x.Id);
         b.Property(x => x.Kind).IsRequired();
         b.Property(x => x.Payload).HasColumnType("jsonb").IsRequired();
+        b.Property(x => x.Channel).HasConversion<int>();
+        b.Property(x => x.DeliveryState).HasConversion<int>();
+        b.Property(x => x.LastError).HasMaxLength(500);
+
+        // Drives the dispatcher's poll: pending rows only, oldest first.
+        b.HasIndex(x => new { x.DeliveryState, x.CreatedAt });
         b.HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(x => new { x.UserId, x.CreatedAt }).HasFilter("read_at IS NULL");
     }

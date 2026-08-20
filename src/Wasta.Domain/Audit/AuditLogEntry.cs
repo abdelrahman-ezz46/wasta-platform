@@ -26,24 +26,3 @@ public class AuditLogEntry : Entity<long>, ICreatedAt
 
     public DateTimeOffset CreatedAt { get; private set; }
 }
-
-public class Notification : Entity<long>, ICreatedAt
-{
-    private Notification() { }
-
-    public Notification(long userId, string kind, string payload, DateTimeOffset now)
-    {
-        UserId = userId;
-        Kind = kind;
-        Payload = payload;
-        CreatedAt = now;
-    }
-
-    public long UserId { get; private set; }
-    public string Kind { get; private set; } = null!;
-    public string Payload { get; private set; } = null!;
-    public DateTimeOffset? ReadAt { get; private set; }
-    public DateTimeOffset CreatedAt { get; private set; }
-
-    public void MarkRead(DateTimeOffset now) => ReadAt ??= now;
-}

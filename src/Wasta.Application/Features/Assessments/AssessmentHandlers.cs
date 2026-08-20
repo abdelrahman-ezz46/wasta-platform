@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Wasta.Application.Abstractions;
 using Wasta.Application.Common;
+using Wasta.Application.Features.Notifications;
 using Wasta.Domain.Assessments;
 
 namespace Wasta.Application.Features.Assessments;
@@ -152,7 +153,9 @@ public class SubmitAttemptHandler(
     IAttemptRepository attempts,
     IUnitOfWork unitOfWork,
     IClock clock,
-    IOptions<AssessmentOptions> options)
+    IOptions<AssessmentOptions> options,
+    INotificationService notifications,
+    INotificationRecipients recipients)
 {
     public async Task<Result<ResultsView>> HandleAsync(SubmitAttemptCommand command, CancellationToken ct = default)
     {
@@ -226,6 +229,17 @@ public class SubmitAttemptHandler(
                 Percent = section.Percent,
                 BandId = section.BandId,
             });
+        }
+
+        // Queued in the same unit of work as the score, so a rolled-back
+        // submission cannot leave a "your results are ready" behind it.
+        var recipientId = await recipients.UserIdForSeekerAsync(attempt.JobSeekerId, ct);
+        if (recipientId is not null)
+        {
+            notifications.Queue(
+                recipientId.Value,
+                NotificationKinds.ResultsReady,
+                new { attemptId = attempt.Id, trackId = attempt.TrackId, overallPercent = outcome.OverallPercent });
         }
 
         await unitOfWork.SaveChangesAsync(ct);
