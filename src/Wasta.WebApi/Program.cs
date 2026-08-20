@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Wasta.Application;
 using Wasta.Infrastructure;
 using Wasta.Infrastructure.Identity;
+using Wasta.WebApi;
 using Wasta.WebApi.Auth;
 using Wasta.WebApi.Endpoints;
 
@@ -73,6 +74,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 builder.Services.AddExceptionHandler<Wasta.WebApi.DomainExceptionHandler>();
+builder.Services.AddWastaRateLimiting(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -124,6 +126,9 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
+// After authentication, so per-user and per-company partitions can read claims.
+app.UseRateLimiter();
+
 app.MapAuthEndpoints();
 app.MapMeEndpoints();
 app.MapAssessmentEndpoints();
@@ -131,6 +136,7 @@ app.MapJobEndpoints();
 app.MapApplicationEndpoints();
 app.MapTalentPoolEndpoints();
 app.MapAdminEndpoints();
+app.MapFileEndpoints();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")

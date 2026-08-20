@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Wasta.Application.Abstractions;
+using Wasta.Infrastructure.Files;
 using Wasta.Infrastructure.Identity;
 using Wasta.Infrastructure.Persistence;
 using Wasta.Infrastructure.Persistence.Repositories;
@@ -48,6 +49,16 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ICreditRepository, CreditRepository>();
         services.AddScoped<ICompanyRepositoryForAdmin, CompanyRepositoryForAdmin>();
         services.AddScoped<Application.Features.TalentPool.IUnlockService, UnlockService>();
+        services.AddScoped<IUploadRepository, UploadRepository>();
+
+        services.Configure<FileStorageOptions>(configuration.GetSection(FileStorageOptions.SectionName));
+        services.AddSingleton<Application.Features.Files.IFileStore, LocalFileStore>();
+        services.AddSingleton<Application.Features.Files.IFileUrlSigner, HmacFileUrlSigner>();
+
+        // Placeholder. The startup check warns on every boot that uploads are
+        // not actually being scanned.
+        services.AddSingleton<Application.Features.Files.IVirusScanner, NoOpVirusScanner>();
+        services.AddHostedService<VirusScannerStartupCheck>();
 
         services.Configure<Application.Features.Assessments.AssessmentOptions>(
             configuration.GetSection(Application.Features.Assessments.AssessmentOptions.SectionName));

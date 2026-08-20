@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 183 passing (59 Career Coach, 36 Support Chat,
-  70 platform API integration, 10 domain, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 211 passing (59 Career Coach, 36 Support Chat,
+  82 platform API integration, 16 application, 10 domain, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -91,6 +91,31 @@ Status keys used below:
 > **No default admin.** The seeder creates one only when both `Seed:AdminEmail` and
 > `Seed:AdminPassword` are supplied by configuration. A seeded admin with a known password is a
 > backdoor that ships the first time someone forgets to override it.
+
+## File uploads and downloads
+
+- [auto] Files are identified by **signature, not extension or Content-Type** — both are attacker
+  controlled. An executable renamed `cv.pdf` and declared `application/pdf` is refused
+- [auto] A CV must be a PDF and under 5 MB; project attachments also accept images and Office files
+- [auto] The storage key is generated server-side, so the uploader's filename is never part of a
+  path; traversal sequences in a name are flattened before the name is echoed back
+- [auto] Downloads need an unexpired signed token. Without one, tampered, or expired: **404**, so
+  probing for keys reveals nothing
+- [auto] A token minted for one file does not open another — the signature covers the key
+- [auto] Replacing a CV deletes the previous file rather than orphaning it
+- [auto] Another seeker's application cannot be given files (404)
+- [auto] Uploads are rate limited **per user**, so one user exhausting their budget leaves everyone
+  else unaffected
+- [verified] Upload, signed download, unsigned 404, and the renamed-executable rejection all
+  exercised against the running API
+- [blocked] **Uploads are not scanned for malware** — `NoOpVirusScanner` reports every file clean.
+  The host logs a warning on every boot. *Needs a real scanner before public launch*
+
+## Rate limiting
+
+- [auto] Per-user upload limits are enforced and return 429
+- [verified] Auth is limited per IP and unlocks per company, both configurable under `RateLimits`.
+  Behind a proxy these depend on `UseForwardedHeaders`, which is wired
 - [auto] `npx tsc --noEmit` clean in `src/frontend/coach-card` and `src/frontend/chat-widget`
 - [verified] Test doubles live under `tests/`. One deliberate exception: `NullJobListingProvider`
   ships in `src/` as a production null-object default so the chatbot runs before the jobs

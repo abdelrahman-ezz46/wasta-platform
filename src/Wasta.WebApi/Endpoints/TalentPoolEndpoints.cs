@@ -3,6 +3,7 @@ using Wasta.Application.Common;
 using Wasta.Application.Features.Credits;
 using Wasta.Application.Features.TalentPool;
 using Wasta.WebApi.Auth;
+using Wasta.WebApi;
 
 namespace Wasta.WebApi.Endpoints;
 
@@ -70,6 +71,7 @@ public static class TalentPoolEndpoints
             var result = await handler.HandleAsync(companyId.Value, seekerId, actorUserId.Value, ct);
             return ProblemMapping.ToResponse(result);
         })
+        .RequireRateLimiting(RateLimiting.UnlockPolicy)
         .WithSummary(
             "Spend one credit to reveal a candidate. Idempotent: unlocking an already-unlocked "
             + "candidate returns the existing unlock and charges nothing.")

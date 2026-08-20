@@ -17,6 +17,9 @@ namespace Wasta.Api.IntegrationTests;
 /// </summary>
 public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private readonly string _uploadRoot =
+        Path.Combine(Path.GetTempPath(), "wasta-tests", Guid.NewGuid().ToString("N"));
+
     public const string AdminEmail = "admin@wasta.test";
     public const string AdminPassword = "AdminPassw0rd123";
 
@@ -50,6 +53,11 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         await _postgres.DisposeAsync();
         await base.DisposeAsync();
+
+        if (Directory.Exists(_uploadRoot))
+        {
+            Directory.Delete(_uploadRoot, recursive: true);
+        }
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -65,6 +73,16 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
         // A fixed test key. Never a fallback in the app itself - the host throws
         // on a missing key precisely so a predictable one cannot ship.
         builder.UseSetting("Jwt:SigningKey", "integration-tests-signing-key-not-a-real-secret-000");
+        // The auth limit is raised well clear of the suite: every test registers
+        // or logs in, and they all arrive from one address. The upload limit is
+        // left low on purpose - it partitions per user, so one test can exhaust
+        // its own budget without touching anyone else's.
+        builder.UseSetting("RateLimits:AuthPerMinute", "10000");
+        builder.UseSetting("RateLimits:UnlockPerMinute", "10000");
+        builder.UseSetting("RateLimits:UploadPerFiveMinutes", "5");
+
+        builder.UseSetting("FileStorage:RootPath", _uploadRoot);
+
         builder.UseSetting("Jwt:Issuer", "wasta");
         builder.UseSetting("Jwt:Audience", "wasta-api");
     }
