@@ -39,4 +39,12 @@ public interface ITokenService
 public interface IUnitOfWork
 {
     Task<int> SaveChangesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Runs the operation inside one transaction, rolling back on any exception.
+    /// Lets a handler say "these writes land together" without knowing what a
+    /// transaction is - approving a company and granting its trial credits must
+    /// not be separable, or an approval could land with no credits behind it.
+    /// </summary>
+    Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken ct = default);
 }

@@ -66,6 +66,12 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.VerifiedCompanyOnly, p =>
         p.RequireRole("Company").AddRequirements(new VerifiedCompanyRequirement()));
 
+// Enums go out as names, not integers. A client switching on 1/2/3 is
+// unreadable, and renumbering the enum would silently change the contract.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter()));
+
 builder.Services.AddExceptionHandler<Wasta.WebApi.DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
@@ -106,6 +112,13 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var seedDb = scope.ServiceProvider.GetRequiredService<Wasta.Infrastructure.Persistence.WastaDbContext>();
     await Wasta.Infrastructure.Persistence.DatabaseSeeder.SeedAsync(seedDb);
+
+    // Only when both are configured. No default admin, ever.
+    await Wasta.Infrastructure.Persistence.DatabaseSeeder.SeedAdminAsync(
+        seedDb,
+        scope.ServiceProvider.GetRequiredService<Wasta.Application.Abstractions.IPasswordHasher>(),
+        builder.Configuration["Seed:AdminEmail"],
+        builder.Configuration["Seed:AdminPassword"]);
 }
 
 app.UseAuthentication();
@@ -116,6 +129,8 @@ app.MapMeEndpoints();
 app.MapAssessmentEndpoints();
 app.MapJobEndpoints();
 app.MapApplicationEndpoints();
+app.MapTalentPoolEndpoints();
+app.MapAdminEndpoints();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")

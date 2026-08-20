@@ -25,6 +25,38 @@ public static class DatabaseSeeder
         await SeedPlaceholderAssessmentAsync(db, ct);
     }
 
+    /// <summary>
+    /// Creates the first admin, and only when both an address and a password are
+    /// supplied by configuration. There is deliberately no default: a seeded
+    /// admin with a known password is a backdoor that ships to production the
+    /// first time someone forgets to override it.
+    /// </summary>
+    public static async Task SeedAdminAsync(
+        WastaDbContext db,
+        Wasta.Application.Abstractions.IPasswordHasher hasher,
+        string? email,
+        string? password,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            return;
+        }
+
+        var normalised = email.Trim().ToLowerInvariant();
+        if (await db.UserAccounts.AnyAsync(u => u.Email == normalised, ct))
+        {
+            return;
+        }
+
+        var admin = new Domain.Identity.UserAccount(
+            normalised, hasher.Hash(password), Domain.Identity.UserRole.Admin);
+
+        admin.MarkEmailVerified(DateTimeOffset.UtcNow);
+        db.UserAccounts.Add(admin);
+        await db.SaveChangesAsync(ct);
+    }
+
     private static async Task SeedLookupsAsync(WastaDbContext db, CancellationToken ct)
     {
         if (!await db.ApplicationStatuses.AnyAsync(ct))

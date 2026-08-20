@@ -16,6 +16,7 @@ public static class ProblemMapping
             // Ownership failures report "not found" so the API cannot be used to
             // discover which ids exist.
             "attempt.not_found" or "job.not_found" or "application.not_found"
+                or "candidate.not_found" or "company.not_found" or "topup.not_found"
                 => (StatusCodes.Status404NotFound, "Not found"),
 
             "auth.email_taken" or "company.name_taken" => (StatusCodes.Status409Conflict, "Conflict"),
@@ -29,6 +30,7 @@ public static class ProblemMapping
                 or "assessment.retake_too_soon"
                 or "job.active_limit_reached" or "job.closed" or "job.already_closed"
                 or "application.limit_reached" or "application.withdrawn" or "application.already_withdrawn"
+                or "credits.insufficient" or "company.already_approved" or "topup.not_pending"
                 => (StatusCodes.Status409Conflict, "Conflict"),
 
             "assessment.no_active_form" or "assessment.no_scoring_rules"

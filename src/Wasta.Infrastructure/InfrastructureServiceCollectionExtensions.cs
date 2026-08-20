@@ -43,6 +43,11 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IJobPostRepository, JobPostRepository>();
         services.AddScoped<IJobQueries, JobQueries>();
         services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
+        services.AddScoped<ITalentPoolQueries, TalentPoolQueries>();
+        services.AddScoped<ICreditQueries, CreditQueries>();
+        services.AddScoped<ICreditRepository, CreditRepository>();
+        services.AddScoped<ICompanyRepositoryForAdmin, CompanyRepositoryForAdmin>();
+        services.AddScoped<Application.Features.TalentPool.IUnlockService, UnlockService>();
 
         services.Configure<Application.Features.Assessments.AssessmentOptions>(
             configuration.GetSection(Application.Features.Assessments.AssessmentOptions.SectionName));

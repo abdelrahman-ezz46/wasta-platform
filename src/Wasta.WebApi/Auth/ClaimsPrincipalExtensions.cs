@@ -16,4 +16,13 @@ public static class ClaimsPrincipalExtensions
 
     public static long? CompanyId(this ClaimsPrincipal user) =>
         long.TryParse(user.FindFirst(JwtTokenService.CompanyIdClaim)?.Value, out var id) ? id : null;
+
+    /// <summary>The account id behind the actor, recorded as the actor on ledger and audit rows.</summary>
+    public static long? UserId(this ClaimsPrincipal user) =>
+        long.TryParse(
+            user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? user.FindFirst("sub")?.Value,
+            out var id)
+            ? id
+            : null;
 }

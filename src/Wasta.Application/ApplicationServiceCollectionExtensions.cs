@@ -3,7 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Wasta.Application.Features.Applications;
 using Wasta.Application.Features.Assessments;
 using Wasta.Application.Features.Auth;
+using Wasta.Application.Features.Credits;
 using Wasta.Application.Features.Jobs;
+using Wasta.Application.Features.TalentPool;
 
 namespace Wasta.Application;
 
@@ -44,6 +46,19 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ListMyApplicationsHandler>();
         services.AddScoped<GetMyApplicationHandler>();
         services.AddScoped<SetApplicationStatusHandler>();
+
+        services.AddScoped<BrowseTalentPoolHandler>();
+        services.AddScoped<GetCandidateHandler>();
+        services.AddScoped<UnlockCandidateHandler>();
+
+        services.AddScoped<GetLedgerHandler>();
+        services.AddScoped<ListMyTopUpRequestsHandler>();
+        services.AddScoped<RequestTopUpHandler>();
+        services.AddScoped<ListPendingCompaniesHandler>();
+        services.AddScoped<ListPendingTopUpsHandler>();
+        services.AddScoped<ApproveCompanyHandler>();
+        services.AddScoped<RejectCompanyHandler>();
+        services.AddScoped<ReviewTopUpHandler>();
 
         return services;
     }

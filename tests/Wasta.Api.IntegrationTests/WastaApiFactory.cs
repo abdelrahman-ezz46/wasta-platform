@@ -17,6 +17,9 @@ namespace Wasta.Api.IntegrationTests;
 /// </summary>
 public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    public const string AdminEmail = "admin@wasta.test";
+    public const string AdminPassword = "AdminPassw0rd123";
+
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
         .WithDatabase("wasta_test")
@@ -35,6 +38,12 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
         // Tests run against the same seed the dev host uses, so a test passing
         // here means the shipped reference data is coherent too.
         await DatabaseSeeder.SeedAsync(db);
+
+        await DatabaseSeeder.SeedAdminAsync(
+            db,
+            scope.ServiceProvider.GetRequiredService<Wasta.Application.Abstractions.IPasswordHasher>(),
+            AdminEmail,
+            AdminPassword);
     }
 
     public new async Task DisposeAsync()

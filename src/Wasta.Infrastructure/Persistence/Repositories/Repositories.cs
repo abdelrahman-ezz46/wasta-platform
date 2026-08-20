@@ -64,6 +64,29 @@ public sealed class RefreshTokenRepository(WastaDbContext db) : IRefreshTokenRep
 public sealed class UnitOfWork(WastaDbContext db) : IUnitOfWork
 {
     public Task<int> SaveChangesAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
+
+    public async Task<T> InTransactionAsync<T>(
+        Func<CancellationToken, Task<T>> operation, CancellationToken ct = default)
+    {
+        // Already inside one - joining it rather than nesting, since Npgsql has
+        // no nested transactions and beginning a second would throw.
+        if (db.Database.CurrentTransaction is not null)
+        {
+            return await operation(ct);
+        }
+
+        var strategy = db.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+            var result = await operation(ct);
+
+            await transaction.CommitAsync(ct);
+            return result;
+        });
+    }
 }
 
 public sealed class AuthorizationQueries(WastaDbContext db) : IAuthorizationQueries

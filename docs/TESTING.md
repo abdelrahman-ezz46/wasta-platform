@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 169 passing (59 Career Coach, 36 Support Chat,
-  56 platform API integration, 10 domain, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 183 passing (59 Career Coach, 36 Support Chat,
+  70 platform API integration, 10 domain, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -65,6 +65,32 @@ Status keys used below:
 - [auto] A broken domain rule returns **400 with its code**, never a 500
 - [verified] Flow exercised against the running API: post, browse, apply, and review, with the
   applicant list confirmed to leak no name
+
+## Talent pool, unlocks and credits *(treat as the money path)*
+
+- [auto] An unverified company cannot see the talent pool at all
+- [auto] Candidates appear anonymised with their score; the real name is absent from the payload,
+  not merely nulled in one field
+- [auto] Identity appears only after an unlock, and the section scores and projects are visible
+  either way — only the identity costs a credit
+- [auto] A seeker who opted out is absent from the pool, cannot be unlocked, and no credit is spent
+- [auto] Unlocking spends exactly one credit and writes one ledger row
+- [auto] Unlocking the same candidate twice charges once and returns the existing unlock
+- [auto] Running out of credits refuses the unlock and leaves the balance at zero, never negative
+- [auto] **8 parallel unlocks of one candidate charge exactly one credit**
+- [auto] **6 parallel unlocks against a 3-credit balance succeed exactly 3 times**
+- [verified] Both concurrency guarantees confirmed by removing the guard: with the `FOR UPDATE`
+  row lock removed, 6 unlocks succeeded on a 3-credit balance. The unique index alone catches the
+  same-candidate case; only the row lock prevents overspending across different candidates
+- [auto] Approving a company grants exactly 3 trial credits, and approving twice is refused
+  without granting again
+- [auto] A top-up request adds nothing until an admin confirms the transfer arrived; a rejected
+  request cannot later be approved
+- [auto] A company cannot reach the admin endpoints
+
+> **No default admin.** The seeder creates one only when both `Seed:AdminEmail` and
+> `Seed:AdminPassword` are supplied by configuration. A seeded admin with a known password is a
+> backdoor that ships the first time someone forgets to override it.
 - [auto] `npx tsc --noEmit` clean in `src/frontend/coach-card` and `src/frontend/chat-widget`
 - [verified] Test doubles live under `tests/`. One deliberate exception: `NullJobListingProvider`
   ships in `src/` as a production null-object default so the chatbot runs before the jobs
