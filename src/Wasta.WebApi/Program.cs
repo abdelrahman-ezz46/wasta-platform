@@ -66,6 +66,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.VerifiedCompanyOnly, p =>
         p.RequireRole("Company").AddRequirements(new VerifiedCompanyRequirement()));
 
+builder.Services.AddExceptionHandler<Wasta.WebApi.DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -113,6 +114,8 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapMeEndpoints();
 app.MapAssessmentEndpoints();
+app.MapJobEndpoints();
+app.MapApplicationEndpoints();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")

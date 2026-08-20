@@ -40,6 +40,9 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<Application.Features.Me.IMeQueries, MeQueries>();
         services.AddScoped<IAssessmentRepository, AssessmentRepository>();
         services.AddScoped<IAttemptRepository, AttemptRepository>();
+        services.AddScoped<IJobPostRepository, JobPostRepository>();
+        services.AddScoped<IJobQueries, JobQueries>();
+        services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
 
         services.Configure<Application.Features.Assessments.AssessmentOptions>(
             configuration.GetSection(Application.Features.Assessments.AssessmentOptions.SectionName));

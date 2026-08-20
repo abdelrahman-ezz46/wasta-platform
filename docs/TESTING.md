@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 148 passing (59 Career Coach, 36 Support Chat,
-  35 platform API integration, 10 domain, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 169 passing (59 Career Coach, 36 Support Chat,
+  56 platform API integration, 10 domain, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -43,6 +43,28 @@ Status keys used below:
 - [auto] Submitting twice is refused; results are unavailable until submission
 - [verified] The whole flow exercised against the running API and real Postgres: start, fetch,
   answer, submit, score 100% with bands and per-section feedback, percentile suppressed
+
+## Jobs, applications and projects
+
+- [auto] Only a **verified** company can post; an unapproved one is refused
+- [auto] The active-post cap is 6 per company, and closing a post frees a slot
+- [auto] A salary amount without a currency is refused — four currencies are in play, so a bare
+  number would be read as whichever the reader assumes
+- [auto] Another company's post reports **404** on edit, close, and applicants
+- [auto] A post on the seeker's own track is flagged `isRecommended` and sorted first
+- [auto] Search and paging work; a closed post disappears from browsing but stays reachable by id
+- [auto] Applying to a closed post is refused
+- [auto] The live-application cap is 6 per seeker; withdrawing frees a slot
+- [auto] Re-applying creates a **second** application rather than reusing the first, so earlier
+  submitted work survives
+- [auto] Another seeker's application reports **404** on read, edit, and withdraw
+- [auto] **Applicants are anonymous until unlocked** — the response carries a derived reference
+  (`#A7DC`), and the candidate's real name appears nowhere in the payload
+- [auto] A company cannot review another company's applicant (404), and cannot mark an applicant
+  withdrawn — that is the applicant's to do
+- [auto] A broken domain rule returns **400 with its code**, never a 500
+- [verified] Flow exercised against the running API: post, browse, apply, and review, with the
+  applicant list confirmed to leak no name
 - [auto] `npx tsc --noEmit` clean in `src/frontend/coach-card` and `src/frontend/chat-widget`
 - [verified] Test doubles live under `tests/`. One deliberate exception: `NullJobListingProvider`
   ships in `src/` as a production null-object default so the chatbot runs before the jobs

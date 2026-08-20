@@ -1,7 +1,9 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Wasta.Application.Features.Applications;
 using Wasta.Application.Features.Assessments;
 using Wasta.Application.Features.Auth;
+using Wasta.Application.Features.Jobs;
 
 namespace Wasta.Application;
 
@@ -26,6 +28,22 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<SaveAnswerHandler>();
         services.AddScoped<SubmitAttemptHandler>();
         services.AddScoped<GetResultsHandler>();
+
+        services.AddScoped<PostJobHandler>();
+        services.AddScoped<UpdateJobHandler>();
+        services.AddScoped<CloseJobHandler>();
+        services.AddScoped<BrowseJobsHandler>();
+        services.AddScoped<GetJobDetailHandler>();
+        services.AddScoped<ListCompanyJobsHandler>();
+        services.AddScoped<GetJobApplicantsHandler>();
+
+        services.AddScoped<ApplyToJobHandler>();
+        services.AddScoped<UpdateProjectHandler>();
+        services.AddScoped<SubmitProjectHandler>();
+        services.AddScoped<WithdrawApplicationHandler>();
+        services.AddScoped<ListMyApplicationsHandler>();
+        services.AddScoped<GetMyApplicationHandler>();
+        services.AddScoped<SetApplicationStatusHandler>();
 
         return services;
     }

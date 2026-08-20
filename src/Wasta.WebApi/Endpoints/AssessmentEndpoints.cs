@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Wasta.Application.Features.Assessments;
-using Wasta.Infrastructure.Identity;
 using Wasta.WebApi.Auth;
 
 namespace Wasta.WebApi.Endpoints;
@@ -96,6 +95,4 @@ public static class AssessmentEndpoints
 
     public sealed record SaveAnswerRequest(long? SelectedOptionId, bool FlaggedForReview);
 
-    private static long? SeekerId(this ClaimsPrincipal user) =>
-        long.TryParse(user.FindFirst(JwtTokenService.SeekerIdClaim)?.Value, out var id) ? id : null;
 }

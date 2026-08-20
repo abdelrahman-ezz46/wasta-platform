@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Wasta.Application.Features.Me;
-using Wasta.Infrastructure.Identity;
 using Wasta.WebApi.Auth;
 
 namespace Wasta.WebApi.Endpoints;
@@ -61,9 +60,5 @@ public static class MeEndpoints
         return app;
     }
 
-    private static long? SeekerId(this ClaimsPrincipal user) =>
-        long.TryParse(user.FindFirst(JwtTokenService.SeekerIdClaim)?.Value, out var id) ? id : null;
 
-    private static long? CompanyId(this ClaimsPrincipal user) =>
-        long.TryParse(user.FindFirst(JwtTokenService.CompanyIdClaim)?.Value, out var id) ? id : null;
 }
