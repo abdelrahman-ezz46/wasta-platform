@@ -139,10 +139,15 @@ single highest-value change available if the host constraint ever lifts.
 
 ## Status
 
-230 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
+240 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
 authorization, assessment delivery and scoring, jobs and applications, the talent pool and unlocks,
-credits, admin verification and top-up review, file uploads, rate limiting and notifications.
-Arabic/RTL is not built.
+credits, admin verification and top-up review, file uploads, rate limiting, notifications, and
+English/Arabic.
+
+**Right-to-left layout is a frontend concern and is not part of this backend.** What the server owns
+is language: `Accept-Language` (or `?lang=`) selects the language of anything it renders, a stored
+per-account preference drives notifications, and reference data carries translations in the database
+rather than in resource files, so an admin adding a track or a city does not need a release.
 
 Two stand-ins are wired in place of real providers, and the host logs a warning about each on every
 boot:

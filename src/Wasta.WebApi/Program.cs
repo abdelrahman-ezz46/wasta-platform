@@ -74,6 +74,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 builder.Services.AddExceptionHandler<Wasta.WebApi.DomainExceptionHandler>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<
+    Wasta.Application.Features.Localization.ICurrentLanguage,
+    Wasta.WebApi.Localization.HttpCurrentLanguage>();
+
 builder.Services.AddWastaRateLimiting(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
@@ -138,6 +143,7 @@ app.MapTalentPoolEndpoints();
 app.MapAdminEndpoints();
 app.MapFileEndpoints();
 app.MapNotificationEndpoints();
+app.MapLocalizationEndpoints();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")

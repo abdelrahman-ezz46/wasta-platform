@@ -1,4 +1,5 @@
 using Wasta.Domain.Common;
+using Wasta.Domain.Localization;
 
 namespace Wasta.Domain.Identity;
 
@@ -30,6 +31,7 @@ public class UserAccount : Entity<long>, ICreatedAt
         PasswordHash = passwordHash;
         Role = role;
         Status = UserStatus.Active;
+        Language = Languages.Default;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = CreatedAt;
     }
@@ -41,6 +43,13 @@ public class UserAccount : Entity<long>, ICreatedAt
     public UserRole Role { get; private set; }
 
     public UserStatus Status { get; private set; }
+
+    /// <summary>
+    /// What language this person reads. Server-rendered prose - notifications
+    /// above all - uses it, so a preference set in the app follows the user into
+    /// their inbox rather than stopping at the screen.
+    /// </summary>
+    public Language Language { get; private set; }
 
     public DateTimeOffset? EmailVerifiedAt { get; private set; }
 
@@ -69,6 +78,12 @@ public class UserAccount : Entity<long>, ICreatedAt
         }
 
         PasswordHash = newHash;
+        UpdatedAt = now;
+    }
+
+    public void SetLanguage(Language language, DateTimeOffset now)
+    {
+        Language = language;
         UpdatedAt = now;
     }
 

@@ -23,6 +23,10 @@ public static class DatabaseSeeder
         await SeedLookupsAsync(db, ct);
         await SeedTracksAndSectionsAsync(db, ct);
         await SeedPlaceholderAssessmentAsync(db, ct);
+
+        // Runs last: translations are matched to reference rows by name, so the
+        // rows have to exist first.
+        await ArabicSeed.SeedAsync(db, ct);
     }
 
     /// <summary>

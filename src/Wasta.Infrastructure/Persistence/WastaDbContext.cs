@@ -7,6 +7,7 @@ using Wasta.Domain.Companies;
 using Wasta.Domain.Credits;
 using Wasta.Domain.Identity;
 using Wasta.Domain.Jobs;
+using Wasta.Domain.Localization;
 using Wasta.Domain.Seekers;
 
 namespace Wasta.Infrastructure.Persistence;
@@ -61,6 +62,8 @@ public class WastaDbContext(DbContextOptions<WastaDbContext> options) : DbContex
     public DbSet<CreditLedgerEntry> CreditLedgerEntries => Set<CreditLedgerEntry>();
     public DbSet<CreditTopUpRequest> CreditTopUpRequests => Set<CreditTopUpRequest>();
     public DbSet<ProfileUnlock> ProfileUnlocks => Set<ProfileUnlock>();
+
+    public DbSet<LocalizedText> LocalizedTexts => Set<LocalizedText>();
 
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
     public DbSet<Notification> Notifications => Set<Notification>();

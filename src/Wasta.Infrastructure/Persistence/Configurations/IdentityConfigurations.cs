@@ -14,6 +14,7 @@ public class UserAccountConfiguration : IEntityTypeConfiguration<UserAccount>
         builder.Property(x => x.PasswordHash).IsRequired();
         builder.Property(x => x.Role).HasConversion<int>();
         builder.Property(x => x.Status).HasConversion<int>();
+        builder.Property(x => x.Language).HasConversion<int>();
 
         // UserAccount lower-cases on write, so a plain unique index gives
         // case-insensitive uniqueness without a functional index.

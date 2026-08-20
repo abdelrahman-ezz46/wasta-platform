@@ -107,7 +107,7 @@ public sealed class NotificationDispatcher(
 
             var recipient = await db.UserAccounts
                 .Where(u => u.Id == notification.UserId)
-                .Select(u => new { u.Email, u.DeletedAt })
+                .Select(u => new { u.Email, u.DeletedAt, u.Language })
                 .FirstOrDefaultAsync(ct);
 
             if (recipient is null || recipient.DeletedAt is not null)
@@ -118,7 +118,11 @@ public sealed class NotificationDispatcher(
                 continue;
             }
 
-            var (subject, body) = NotificationRenderer.Render(notification.Kind, notification.Payload);
+            // The recipient's own language, not the language of whoever caused
+            // this. A company acting in English must not get an Arabic-reading
+            // student emailed in English.
+            var (subject, body) = NotificationRenderer.Render(
+                notification.Kind, notification.Payload, recipient.Language);
 
             try
             {

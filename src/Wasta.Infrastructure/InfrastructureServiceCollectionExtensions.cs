@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Wasta.Application.Abstractions;
 using Wasta.Infrastructure.Files;
+using Wasta.Infrastructure.Localization;
 using Wasta.Infrastructure.Notifications;
 using Wasta.Infrastructure.Identity;
 using Wasta.Infrastructure.Persistence;
@@ -73,6 +74,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<Application.Features.Notifications.INotificationSender, LoggingNotificationSender>();
         services.AddHostedService<NotificationSenderStartupCheck>();
         services.AddHostedService<NotificationDispatcher>();
+
+        services.AddMemoryCache();
+        services.AddSingleton<Application.Features.Localization.ILocalizer, CachedLocalizer>();
+        services.AddScoped<Application.Features.Localization.IReferenceDataQueries, ReferenceDataQueries>();
 
         services.Configure<Application.Features.Assessments.AssessmentOptions>(
             configuration.GetSection(Application.Features.Assessments.AssessmentOptions.SectionName));

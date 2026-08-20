@@ -7,6 +7,7 @@ using Wasta.Domain.Companies;
 using Wasta.Domain.Credits;
 using Wasta.Domain.Identity;
 using Wasta.Domain.Jobs;
+using Wasta.Domain.Localization;
 using Wasta.Domain.Seekers;
 
 namespace Wasta.Infrastructure.Persistence.Configurations;
@@ -165,5 +166,25 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         b.HasIndex(x => new { x.DeliveryState, x.CreatedAt });
         b.HasOne<UserAccount>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(x => new { x.UserId, x.CreatedAt }).HasFilter("read_at IS NULL");
+    }
+}
+
+public class LocalizedTextConfiguration : IEntityTypeConfiguration<LocalizedText>
+{
+    public void Configure(EntityTypeBuilder<LocalizedText> b)
+    {
+        b.ToTable("localized_text");
+
+        // One translation per entity, field and language. The composite key is
+        // what stops two Arabic names for the same track existing at once.
+        b.HasKey(x => new { x.EntityType, x.EntityId, x.Field, x.Language });
+
+        b.Property(x => x.EntityType).IsRequired().HasMaxLength(64);
+        b.Property(x => x.Field).IsRequired().HasMaxLength(64);
+        b.Property(x => x.Language).HasConversion<int>();
+        b.Property(x => x.Value).IsRequired();
+
+        // The provider loads a whole language at once and caches it.
+        b.HasIndex(x => x.Language);
     }
 }

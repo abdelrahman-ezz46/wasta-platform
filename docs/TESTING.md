@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 230 passing (59 Career Coach, 36 Support Chat,
-  93 platform API integration, 18 domain, 16 application, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 240 passing (59 Career Coach, 36 Support Chat,
+  103 platform API integration, 18 domain, 16 application, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -139,6 +139,34 @@ Status keys used below:
 > **Never string-match a `jsonb` payload in a test.** Postgres normalises jsonb: it reorders keys and
 > rewrites whitespace, so a substring assertion tests Postgres's formatter rather than your code.
 > Parse the payload and assert on the value.
+
+## Language
+
+> **Right-to-left layout is a frontend concern and is out of scope for this backend.** What the
+> server owns is which language it renders in.
+
+- [auto] `/api/reference` is anonymous — the sign-up form needs the track list before anyone has an
+  account to sign in with
+- [auto] `Accept-Language: ar` returns Arabic tracks, statuses, cities and work types
+- [auto] A regional tag (`ar-EG`) resolves to its primary language
+- [auto] An unsupported language (`fr-FR`) falls back to English rather than failing
+- [auto] An explicit `?lang=` beats the header
+- [auto] Skills are deliberately **not** translated — React and TypeScript are proper nouns, and
+  transliterating them would make them harder to recognise
+- [auto] An untranslated row falls back to its English name rather than vanishing, so a partially
+  translated database stays usable
+- [auto] Results come back with Arabic section and band names when asked for
+- [auto] A language preference is stored per account; an unsupported value is **refused** rather
+  than silently stored as English
+- [auto] Notifications render in the recipient's stored language, and data inside them — a company's
+  own name — survives translation untouched
+- [verified] Confirmed against the running API: `Accept-Language: ar-EG` returned
+  `هندسة الواجهات الأمامية`, `قيد المراجعة`, `القاهرة`, with skills left as `AWS`, `C#`, `Docker`
+
+> **Request language and notification language are different on purpose.** `Accept-Language` decides
+> what a response renders in; the stored preference decides what an email renders in. A notification
+> is sent long after any request header is gone, and a company acting in English must not cause an
+> Arabic-reading student to be emailed in English.
 - [auto] `npx tsc --noEmit` clean in `src/frontend/coach-card` and `src/frontend/chat-widget`
 - [verified] Test doubles live under `tests/`. One deliberate exception: `NullJobListingProvider`
   ships in `src/` as a production null-object default so the chatbot runs before the jobs

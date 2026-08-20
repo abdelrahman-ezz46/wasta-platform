@@ -7,6 +7,7 @@ using Wasta.Application.Features.Credits;
 using Wasta.Application.Features.Files;
 using Wasta.Application.Features.Notifications;
 using Wasta.Application.Features.Jobs;
+using Wasta.Application.Features.Localization;
 using Wasta.Application.Features.TalentPool;
 
 namespace Wasta.Application;
@@ -70,6 +71,9 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<UnreadCountHandler>();
         services.AddScoped<MarkNotificationReadHandler>();
         services.AddScoped<MarkAllNotificationsReadHandler>();
+
+        services.AddScoped<GetReferenceDataHandler>();
+        services.AddScoped<SetLanguageHandler>();
 
         return services;
     }

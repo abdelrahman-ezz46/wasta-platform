@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Wasta.Application.Abstractions;
 using Wasta.Application.Features.Assessments;
+using Wasta.Application.Features.Localization;
 using Wasta.Domain.Assessments;
+using Wasta.Domain.Localization;
 
 namespace Wasta.Infrastructure.Persistence.Repositories;
 
@@ -123,7 +125,8 @@ public sealed class AssessmentRepository(WastaDbContext db) : IAssessmentReposit
             .ToListAsync(ct);
 }
 
-public sealed class AttemptRepository(WastaDbContext db) : IAttemptRepository
+public sealed class AttemptRepository(
+    WastaDbContext db, ILocalizer localizer, ICurrentLanguage language) : IAttemptRepository
 {
     public Task<Attempt?> FindAsync(long attemptId, CancellationToken ct = default) =>
         db.Attempts.FirstOrDefaultAsync(a => a.Id == attemptId, ct);
@@ -191,6 +194,7 @@ public sealed class AttemptRepository(WastaDbContext db) : IAttemptRepository
                 sec.Name,
                 sec.DisplayOrder,
                 ss.Percent,
+                ss.BandId,
                 BandName = db.ScoreBands.Where(b => b.Id == ss.BandId).Select(b => b.Name).FirstOrDefault(),
                 Feedback = db.SectionBandFeedback
                     .Where(f => f.SectionId == ss.SectionId && f.BandId == ss.BandId)
@@ -199,10 +203,23 @@ public sealed class AttemptRepository(WastaDbContext db) : IAttemptRepository
             })
             .ToListAsync(ct);
 
+        var sectionNames = await localizer.NamesAsync(LocalizedEntities.Section, language.Value, ct);
+        var bandNames = await localizer.NamesAsync(LocalizedEntities.ScoreBand, language.Value, ct);
+
+        static string Localised(IReadOnlyDictionary<long, string> names, long id, string? fallback) =>
+            names.TryGetValue(id, out var value) && !string.IsNullOrWhiteSpace(value)
+                ? value
+                : fallback ?? string.Empty;
+
         var views = sections
             .OrderBy(s => s.DisplayOrder)
             .ThenBy(s => s.SectionId)
-            .Select(s => new SectionScoreView(s.SectionId, s.Name, s.Percent, s.BandName, s.Feedback))
+            .Select(s => new SectionScoreView(
+                s.SectionId,
+                Localised(sectionNames, s.SectionId, s.Name),
+                s.Percent,
+                s.BandId is null ? s.BandName : Localised(bandNames, s.BandId.Value, s.BandName),
+                s.Feedback))
             .ToList();
 
         // Same ordering rule the calculator uses, so the gaps shown here match
