@@ -74,7 +74,8 @@ public class ApproveCompanyHandler(
     IUnitOfWork unitOfWork,
     IClock clock,
     INotificationService notifications,
-    INotificationRecipients recipients)
+    INotificationRecipients recipients,
+    IAuditWriter audit)
 {
     public async Task<Result> HandleAsync(ApproveCompanyCommand command, CancellationToken ct = default)
     {
@@ -120,6 +121,10 @@ public class ApproveCompanyHandler(
                     new { companyId = command.CompanyId, companyName = company.Name });
             }
 
+            audit.Write(
+                command.AdminUserId, "company.approved", "company",
+                command.CompanyId.ToString(), new { trialCredits = Company.TrialCredits }, now);
+
             await unitOfWork.SaveChangesAsync(token);
             return Result.Success();
         }, ct);
@@ -131,7 +136,8 @@ public class RejectCompanyHandler(
     IUnitOfWork unitOfWork,
     IClock clock,
     INotificationService notifications,
-    INotificationRecipients recipients)
+    INotificationRecipients recipients,
+    IAuditWriter audit)
 {
     public async Task<Result> HandleAsync(RejectCompanyCommand command, CancellationToken ct = default)
     {
@@ -142,6 +148,10 @@ public class RejectCompanyHandler(
         }
 
         company.Reject(command.AdminUserId, command.Note, clock.UtcNow);
+
+        audit.Write(
+            command.AdminUserId, "company.rejected", "company",
+            command.CompanyId.ToString(), new { note = command.Note }, clock.UtcNow);
 
         var rejectedRecipient = await recipients.UserIdForCompanyAsync(command.CompanyId, ct);
         if (rejectedRecipient is not null)
@@ -164,7 +174,8 @@ public class ReviewTopUpHandler(
     IUnitOfWork unitOfWork,
     IClock clock,
     INotificationService notifications,
-    INotificationRecipients recipients)
+    INotificationRecipients recipients,
+    IAuditWriter audit)
 {
     public async Task<Result> HandleAsync(ReviewTopUpCommand command, CancellationToken ct = default)
     {
@@ -182,6 +193,17 @@ public class ReviewTopUpHandler(
             }
 
             var now = clock.UtcNow;
+
+            // Money decisions are audited either way. "Why does this company
+            // have credits" and "why does it not" are both questions that get
+            // asked later.
+            audit.Write(
+                command.AdminUserId,
+                command.Approve ? "topup.approved" : "topup.rejected",
+                "credit_topup_request",
+                request.Id.ToString(),
+                new { credits = request.CreditsRequested, companyId = request.CompanyId },
+                now);
 
             if (!command.Approve)
             {

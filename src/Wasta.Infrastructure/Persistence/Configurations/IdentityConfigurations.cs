@@ -39,3 +39,25 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.HasIndex(x => x.FamilyId);
     }
 }
+
+public class AccountTokenConfiguration : IEntityTypeConfiguration<AccountToken>
+{
+    public void Configure(EntityTypeBuilder<AccountToken> builder)
+    {
+        builder.ToTable("account_token");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.TokenHash).IsRequired();
+        builder.Property(x => x.Purpose).HasConversion<int>();
+
+        builder.HasOne<UserAccount>()
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Lookup is by hash on redemption; the composite index serves the
+        // "invalidate this user's outstanding tokens" path when a new one is
+        // issued.
+        builder.HasIndex(x => x.TokenHash).IsUnique();
+        builder.HasIndex(x => new { x.UserId, x.Purpose });
+    }
+}

@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 240 passing (59 Career Coach, 36 Support Chat,
-  103 platform API integration, 18 domain, 16 application, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 257 passing (59 Career Coach, 36 Support Chat,
+  120 platform API integration, 18 domain, 16 application, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -162,6 +162,33 @@ Status keys used below:
   own name — survives translation untouched
 - [verified] Confirmed against the running API: `Accept-Language: ar-EG` returned
   `هندسة الواجهات الأمامية`, `قيد المراجعة`, `القاهرة`, with skills left as `AWS`, `C#`, `Docker`
+
+## Account lifecycle, and PDPL access and erasure
+
+- [auto] A new account starts unverified and is confirmed from the emailed link
+- [auto] Verification and reset tokens are **single use**, and issuing a new one kills the previous
+  one — requesting twice must not leave a spare valid link in an inbox
+- [auto] A made-up token, an expired one, a used one and an invalidated one all report the same
+  thing, so a stale link never reveals whether it was ever real
+- [auto] `forgot-password` returns a **byte-identical** response for a registered and an unregistered
+  address, and no email is sent to the stranger — the identical response must not come at the cost
+  of mailing people who never signed up
+- [auto] A reset changes the password, the old one stops working, and **every existing session ends**
+  — a reset is what someone does when they think they are compromised
+- [auto] The reset path enforces the same password policy as registration
+- [auto] `/api/me/export` returns everything held about the account; it needs authentication
+- [auto] Erasure scrubs the identity, blanks the password hash and ends sign-in, while keeping the
+  row so foreign keys hold
+- [auto] **Erasure leaves a company's purchase history intact** — the unlock record and credit ledger
+  survive, because erasing one party must not erase the other party's financial record
+- [auto] A password reset writes an audit row
+- [verified] Whole flow exercised against the running API: link emitted, reset accepted (204), old
+  password refused (401), new password accepted (200), token reuse refused (400)
+
+> **Verification and reset emails bypass the notification outbox on purpose.** The outbox persists a
+> payload, and the payload would have to carry the raw token — queueing these would put a bearer
+> credential in a database table in plain text, defeating the point of storing only its hash. They
+> are sent inline instead; if delivery fails, requesting another link is already the normal path.
 
 > **Request language and notification language are different on purpose.** `Accept-Language` decides
 > what a response renders in; the stored preference decides what an email renders in. A notification

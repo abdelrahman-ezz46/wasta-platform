@@ -144,6 +144,7 @@ app.MapAdminEndpoints();
 app.MapFileEndpoints();
 app.MapNotificationEndpoints();
 app.MapLocalizationEndpoints();
+app.MapAccountEndpoints();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")

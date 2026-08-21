@@ -139,10 +139,11 @@ single highest-value change available if the host constraint ever lifts.
 
 ## Status
 
-240 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
+257 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
 authorization, assessment delivery and scoring, jobs and applications, the talent pool and unlocks,
-credits, admin verification and top-up review, file uploads, rate limiting, notifications, and
-English/Arabic.
+credits, admin verification and top-up review, file uploads, rate limiting, notifications,
+English/Arabic, and the account lifecycle — email verification, password reset, and PDPL data export
+and erasure.
 
 **Right-to-left layout is a frontend concern and is not part of this backend.** What the server owns
 is language: `Accept-Language` (or `?lang=`) selects the language of anything it renders, a stored
@@ -157,7 +158,11 @@ boot:
   between strangers — wire a real scanner behind `IVirusScanner` before accepting public uploads.
 - **Notifications are not delivered.** `LoggingNotificationSender` writes to the log instead of
   sending, so password resets, verification and unlock alerts reach nobody until a provider is wired
-  in behind `INotificationSender`. The knowledge base has unresolved TODOs, the seeded assessment items
+  in behind `INotificationSender`.
+
+To exercise verification or password reset locally, set `Notifications:LogBodies=true` — the emailed
+link is then written to the log in full. It is off by default and must stay off anywhere that keeps
+logs, because those links are bearer credentials. The knowledge base has unresolved TODOs, the seeded assessment items
 are placeholders rather than a validated instrument, and the AI guardrail rows have not been run
 against a real model.
 [docs/TESTING.md](docs/TESTING.md) tracks exactly what is verified and what is not.

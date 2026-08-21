@@ -21,6 +21,7 @@ public class WastaDbContext(DbContextOptions<WastaDbContext> options) : DbContex
 {
     public DbSet<UserAccount> UserAccounts => Set<UserAccount>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<AccountToken> AccountTokens => Set<AccountToken>();
 
     public DbSet<Track> Tracks => Set<Track>();
     public DbSet<Skill> Skills => Set<Skill>();

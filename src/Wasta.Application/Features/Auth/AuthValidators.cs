@@ -51,3 +51,15 @@ public class RefreshValidator : AbstractValidator<RefreshCommand>
 {
     public RefreshValidator() => RuleFor(x => x.RefreshToken).NotEmpty();
 }
+
+public class ResetPasswordValidator : AbstractValidator<ResetPasswordCommand>
+{
+    public ResetPasswordValidator()
+    {
+        RuleFor(x => x.Token).NotEmpty();
+
+        // The same policy as registration. A reset that accepts a weaker
+        // password than sign-up did is a downgrade path.
+        RuleFor(x => x.NewPassword).Password();
+    }
+}

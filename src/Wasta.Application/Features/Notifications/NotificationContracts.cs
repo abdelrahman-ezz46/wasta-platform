@@ -15,6 +15,10 @@ public static class NotificationKinds
     public const string CompanyApproved = "company.approved";
     public const string CompanyRejected = "company.rejected";
     public const string CreditsIssued = "credits.issued";
+
+    // Sent inline rather than queued - see AccountEmails for why.
+    public const string EmailVerification = "account.email_verification";
+    public const string PasswordReset = "account.password_reset";
 }
 
 public sealed record NotificationView(

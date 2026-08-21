@@ -54,3 +54,22 @@ public interface IAuthorizationQueries
 {
     Task<bool> IsCompanyVerifiedAsync(long companyId, CancellationToken ct = default);
 }
+
+public interface IAccountTokenRepository
+{
+    Task<Domain.Identity.AccountToken?> FindByHashAsync(string tokenHash, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retires this user's outstanding tokens of a purpose. Issuing a new reset
+    /// link must kill the previous one, or requesting two leaves a spare valid
+    /// credential sitting in an inbox.
+    /// </summary>
+    Task InvalidateOutstandingAsync(
+        long userId, Domain.Identity.AccountTokenPurpose purpose, DateTimeOffset now,
+        CancellationToken ct = default);
+
+    void Add(Domain.Identity.AccountToken token);
+
+    /// <summary>Ends every session for a user. Used after a password reset.</summary>
+    Task RevokeAllRefreshTokensAsync(long userId, DateTimeOffset now, CancellationToken ct = default);
+}

@@ -37,6 +37,13 @@ public static class ProblemMapping
             "assessment.no_active_form" or "assessment.no_scoring_rules"
                 => (StatusCodes.Status503ServiceUnavailable, "Not available"),
 
+            "account.already_verified" => (StatusCodes.Status409Conflict, "Conflict"),
+
+            // Wrong, expired, used and invalidated are one answer on purpose:
+            // telling a holder which it was reveals whether the link was ever
+            // real.
+            "token.invalid" => (StatusCodes.Status400BadRequest, "Bad request"),
+
             _ => (StatusCodes.Status400BadRequest, "Bad request"),
         };
 

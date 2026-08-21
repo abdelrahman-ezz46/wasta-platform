@@ -30,6 +30,14 @@ public interface ITokenService
 
     string HashRefreshToken(string raw);
 
+    /// <summary>
+    /// A high-entropy opaque token for links sent by email. Same shape as a
+    /// refresh token: the raw value goes out once, only the hash is kept.
+    /// </summary>
+    (string Raw, string Hash) CreateOpaqueToken();
+
+    string HashOpaqueToken(string raw);
+
     TimeSpan AccessTokenLifetime { get; }
 
     TimeSpan RefreshTokenLifetime { get; }
@@ -47,4 +55,20 @@ public interface IUnitOfWork
     /// not be separable, or an approval could land with no credits behind it.
     /// </summary>
     Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Records who did what. Queued like a notification rather than saved, so an
+/// audit row commits with the action it describes - an audit log that survives
+/// a rolled-back transaction records something that never happened.
+/// </summary>
+public interface IAuditWriter
+{
+    void Write(
+        long? actorUserId,
+        string action,
+        string entityType,
+        string entityId,
+        object? detail,
+        DateTimeOffset now);
 }

@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 using Wasta.Infrastructure.Persistence;
 
@@ -19,6 +21,9 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
 {
     private readonly string _uploadRoot =
         Path.Combine(Path.GetTempPath(), "wasta-tests", Guid.NewGuid().ToString("N"));
+
+    /// <summary>Captures outbound mail so tests can read emailed links.</summary>
+    public CapturingNotificationSender Sender { get; } = new();
 
     public const string AdminEmail = "admin@wasta.test";
     public const string AdminPassword = "AdminPassw0rd123";
@@ -88,6 +93,13 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting("Notifications:Enabled", "false");
 
         builder.UseSetting("Jwt:Issuer", "wasta");
+        builder.UseSetting("AccountLinks:BaseUrl", "https://app.wasta.test");
+
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<Wasta.Application.Features.Notifications.INotificationSender>();
+            services.AddSingleton<Wasta.Application.Features.Notifications.INotificationSender>(Sender);
+        });
         builder.UseSetting("Jwt:Audience", "wasta-api");
     }
 }

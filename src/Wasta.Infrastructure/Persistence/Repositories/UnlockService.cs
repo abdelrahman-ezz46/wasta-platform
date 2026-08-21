@@ -115,7 +115,19 @@ public sealed class UnlockService(WastaDbContext db, Wasta.Application.Abstracti
                     UnlockOutcome.AlreadyUnlocked, already?.Id, await BalanceAsync(companyId, ct));
             }
 
+            // Audited inside the transaction: the record of a spend must not be
+            // separable from the spend.
+            db.AuditLog.Add(new AuditLogEntry(
+                actorUserId,
+                "candidate.unlocked",
+                "profile_unlock",
+                unlock.Id.ToString(),
+                JsonSerializer.Serialize(new { companyId, jobSeekerId, balanceAfter = entry.BalanceAfter }),
+                now));
+
+            await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+
             return new UnlockResult(UnlockOutcome.Unlocked, unlock.Id, entry.BalanceAfter);
         });
     }

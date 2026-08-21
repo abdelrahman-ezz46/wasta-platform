@@ -52,6 +52,13 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ICompanyRepositoryForAdmin, CompanyRepositoryForAdmin>();
         services.AddScoped<Application.Features.TalentPool.IUnlockService, UnlockService>();
         services.AddScoped<IUploadRepository, UploadRepository>();
+        services.AddScoped<IAccountTokenRepository, AccountTokenRepository>();
+        services.AddScoped<IAuditWriter, AuditWriter>();
+        services.AddScoped<Application.Features.Auth.IPersonalDataQueries, PersonalDataQueries>();
+        services.AddScoped<Application.Features.Auth.IPersonalDataEraser, PersonalDataEraser>();
+
+        services.Configure<Application.Features.Auth.AccountLinkOptions>(
+            configuration.GetSection(Application.Features.Auth.AccountLinkOptions.SectionName));
 
         services.Configure<FileStorageOptions>(configuration.GetSection(FileStorageOptions.SectionName));
         services.AddSingleton<Application.Features.Files.IFileStore, LocalFileStore>();
@@ -71,6 +78,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<Application.Features.Notifications.INotificationRepository, NotificationRepository>();
 
         // Writes to the log rather than sending. The startup check says so.
+        services.Configure<LoggingNotificationSenderOptions>(
+            configuration.GetSection(LoggingNotificationSenderOptions.SectionName));
         services.AddSingleton<Application.Features.Notifications.INotificationSender, LoggingNotificationSender>();
         services.AddHostedService<NotificationSenderStartupCheck>();
         services.AddHostedService<NotificationDispatcher>();
