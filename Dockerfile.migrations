@@ -10,6 +10,13 @@ RUN dotnet tool restore
 
 # Idempotent by nature: EF skips migrations already recorded in
 # __EFMigrationsHistory, so re-running a deploy is a no-op rather than an error.
-ENTRYPOINT ["dotnet", "ef", "database", "update", \
-    "--project", "src/Wasta.Infrastructure", \
-    "--startup-project", "src/Wasta.Infrastructure"]
+# All three contexts: the platform plus the two AI modules, which keep their
+# own DbContexts in the same database.
+#
+# The module contexts need --connection passed explicitly. Their design-time
+# factories hard-code a local connection string and ignore configuration, so
+# without it they try to reach a database that does not exist here.
+ENTRYPOINT ["/bin/sh", "-c", "\
+    dotnet ef database update --project src/Wasta.Infrastructure --startup-project src/Wasta.Infrastructure && \
+    dotnet ef database update --project src/Wasta.CareerCoach  --startup-project src/Wasta.CareerCoach  --connection \"$ConnectionStrings__Wasta\" && \
+    dotnet ef database update --project src/Wasta.SupportChat  --startup-project src/Wasta.SupportChat  --connection \"$ConnectionStrings__Wasta\""]

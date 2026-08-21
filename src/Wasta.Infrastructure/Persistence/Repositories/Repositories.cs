@@ -148,3 +148,9 @@ public sealed class MeQueries(WastaDbContext db) : Wasta.Application.Features.Me
         return new Wasta.Application.Features.Me.CreditBalance(companyId, balance);
     }
 }
+
+public sealed class LoggerAdapter(Microsoft.Extensions.Logging.ILogger<LoggerAdapter> logger) : ILoggerAdapter
+{
+    public void Warn(string template, params object?[] args) =>
+        Microsoft.Extensions.Logging.LoggerExtensions.LogWarning(logger, template, args);
+}

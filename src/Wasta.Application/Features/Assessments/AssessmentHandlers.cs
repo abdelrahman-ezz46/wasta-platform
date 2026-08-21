@@ -155,7 +155,9 @@ public class SubmitAttemptHandler(
     IClock clock,
     IOptions<AssessmentOptions> options,
     INotificationService notifications,
-    INotificationRecipients recipients)
+    INotificationRecipients recipients,
+    ICoachPlanTrigger coachPlans,
+    ILoggerAdapter? logger = null)
 {
     public async Task<Result<ResultsView>> HandleAsync(SubmitAttemptCommand command, CancellationToken ct = default)
     {
@@ -243,6 +245,18 @@ public class SubmitAttemptHandler(
         }
 
         await unitOfWork.SaveChangesAsync(ct);
+
+        // After the score is committed, and deliberately not awaited for its
+        // outcome: the coach is an add-on to the results page, so a failure
+        // there must not cost the student their score.
+        try
+        {
+            await coachPlans.EnqueueAsync(attempt.JobSeekerId, attempt.Id, ct);
+        }
+        catch (Exception ex)
+        {
+            logger?.Warn("Could not enqueue a coach plan for attempt {0}: {1}", attempt.Id, ex.Message);
+        }
 
         var results = await attempts.GetResultsAsync(attempt.Id, ct);
         return results is null

@@ -72,3 +72,33 @@ public interface IAuditWriter
         object? detail,
         DateTimeOffset now);
 }
+
+/// <summary>
+/// Kicks off Career Coach plan generation after an assessment is scored.
+///
+/// An interface here rather than a direct call so the Application layer keeps
+/// no dependency on the AI modules. It is also fire-and-forget by contract: the
+/// coach is an optional add-on to the results page, and a student must never
+/// wait on it or lose their score because it failed.
+/// </summary>
+public interface ICoachPlanTrigger
+{
+    Task EnqueueAsync(long seekerId, long attemptId, CancellationToken ct = default);
+}
+
+/// <summary>Used when the AI modules are not wired in. Does nothing, quietly and on purpose.</summary>
+public sealed class NoCoachPlanTrigger : ICoachPlanTrigger
+{
+    public Task EnqueueAsync(long seekerId, long attemptId, CancellationToken ct = default) =>
+        Task.CompletedTask;
+}
+
+/// <summary>
+/// The narrowest possible logging seam. Application declares this rather than
+/// taking Microsoft.Extensions.Logging so the layer keeps its dependency list
+/// honest; Infrastructure adapts it to the real logger.
+/// </summary>
+public interface ILoggerAdapter
+{
+    void Warn(string template, params object?[] args);
+}

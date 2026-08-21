@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 298 passing (59 Career Coach, 36 Support Chat,
-  140 platform API integration, 39 domain, 16 application, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 308 passing (59 Career Coach, 36 Support Chat,
+  150 platform API integration, 39 domain, 16 application, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -209,6 +209,31 @@ This is the surface a subject-matter expert and a psychometrician use to load re
 - [auto] Content changes are audited
 - [verified] Readiness against the running API reports all six tracks blocked on the same thing:
   *"5 of 5 active questions are seeded placeholders. Scores produced from them are meaningless."*
+
+## AI modules wired into the platform
+
+These prove the five ports actually connect, which until now was asserted rather than tested.
+
+- [auto] The coach reads a real scored attempt through `IAssessmentDataProvider` — right seeker,
+  right track, right section scores
+- [auto] The student context DTO still has exactly three properties. Name, email, university, city
+  and CV have nowhere to go, so what reaches the model is bounded by shape rather than by
+  remembering — and this test fails if the shape ever grows a fourth
+- [auto] The chatbot is offered real, track-matched job posts, each with a real URL
+- [auto] Submitting a scored assessment creates a coach plan row, triggered from the platform's own
+  submit handler
+- [auto] The coach plan endpoint is reachable by a seeker through the `StudentOnly` alias, and a
+  company gets 403
+- [auto] The support chat endpoints are mounted; an unknown session returns an empty history rather
+  than an error
+
+> **Do not assert the settled coach-plan status in a test.** The module's worker waits two seconds
+> between jobs on purpose, so a burst of submissions cannot trip a free-tier AI rate limit. With a
+> suite-wide queue the settled value can be half a minute away, and waiting for it tests the
+> throttle rather than the wiring.
+
+> **The module contexts need `--connection` passed explicitly** when applying migrations. Their
+> design-time factories hard-code a local connection string and ignore configuration.
 
 ## Deployability and observability
 

@@ -9,13 +9,20 @@ using Wasta.Infrastructure;
 using Wasta.Infrastructure.Identity;
 using Wasta.WebApi;
 using Wasta.WebApi.Auth;
+using Wasta.CareerCoach.Api;
+using Wasta.SupportChat.Api;
 using Wasta.WebApi.Endpoints;
+using Wasta.WebApi.Integration;
 using Wasta.WebApi.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddWastaApplication();
 builder.Services.AddWastaInfrastructure(builder.Configuration);
+
+// The two AI modules, wired to the platform through their five ports.
+var aiConnectionString = builder.Configuration.GetConnectionString("Wasta")!;
+builder.Services.AddWastaAiModules(builder.Configuration, aiConnectionString);
 
 // Behind a load balancer RemoteIpAddress is the proxy, which would put every
 // caller in one rate-limit bucket and log the wrong client address.
@@ -63,6 +70,11 @@ builder.Services.AddScoped<IAuthorizationHandler, VerifiedCompanyHandler>();
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.SeekerOnly, p => p.RequireRole("Seeker"))
+
+    // The Career Coach endpoints were written against a host that calls this
+    // role "Student". Rather than edit a tested module to match our vocabulary,
+    // the host provides the name the module expects.
+    .AddPolicy(Policies.StudentOnly, p => p.RequireRole("Seeker"))
     .AddPolicy(Policies.CompanyOnly, p => p.RequireRole("Company"))
     .AddPolicy(Policies.AdminOnly, p => p.RequireRole("Admin"))
     .AddPolicy(Policies.VerifiedCompanyOnly, p =>
@@ -148,6 +160,11 @@ app.MapApplicationEndpoints();
 app.MapTalentPoolEndpoints();
 app.MapAdminEndpoints();
 app.MapAdminContentEndpoints();
+
+// The AI modules map their own endpoints: the coach card's plan and the
+// support chat's sessions.
+app.MapCareerCoachEndpoints();
+app.MapSupportChatEndpoints();
 app.MapFileEndpoints();
 app.MapNotificationEndpoints();
 app.MapLocalizationEndpoints();

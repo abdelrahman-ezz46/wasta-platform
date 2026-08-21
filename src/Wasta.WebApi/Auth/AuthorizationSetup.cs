@@ -11,6 +11,12 @@ public static class Policies
     public const string AdminOnly = "AdminOnly";
 
     /// <summary>
+    /// What the Career Coach module's endpoints require. Same people as
+    /// SeekerOnly - the module simply calls them students.
+    /// </summary>
+    public const string StudentOnly = "StudentOnly";
+
+    /// <summary>
     /// Signed in as a company AND approved by an admin. An unverified company can
     /// sign in and upload documents; everything else - the talent pool above all -
     /// stays shut.

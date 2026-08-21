@@ -43,6 +43,15 @@ public sealed class WastaApiFactory : WebApplicationFactory<Program>, IAsyncLife
         var db = scope.ServiceProvider.GetRequiredService<WastaDbContext>();
         await db.Database.MigrateAsync();
 
+        // The AI modules keep their own DbContexts and their own migrations,
+        // sharing this database. All three histories live in one
+        // __EFMigrationsHistory table, which works because their migration ids
+        // are timestamped and therefore distinct.
+        await scope.ServiceProvider
+            .GetRequiredService<Wasta.CareerCoach.Data.CoachDbContext>().Database.MigrateAsync();
+        await scope.ServiceProvider
+            .GetRequiredService<Wasta.SupportChat.Data.SupportChatDbContext>().Database.MigrateAsync();
+
         // Tests run against the same seed the dev host uses, so a test passing
         // here means the shipped reference data is coherent too.
         await DatabaseSeeder.SeedAsync(db);

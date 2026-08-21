@@ -116,6 +116,31 @@ The provider's own `Model` is still required — a feature override alone does n
 usable, so a missing base configuration is caught rather than silently half-working. Model IDs are
 deprecated without much notice; check the provider's console when wiring this up.
 
+## The AI modules are wired in
+
+The Career Coach and Support Chatbot now run inside the platform API, connected through the five
+ports they were written against. Nothing in either module changed to make that happen, which was the
+point of the ports — and is now tested rather than asserted.
+
+- Submitting a scored assessment enqueues a coach plan. The trigger fires from the platform's own
+  submit handler, so there is no separate call for a host to remember, and a failure there cannot
+  cost a student their score.
+- The chatbot is offered real job posts, track-matched for a signed-in seeker, each with a real URL
+  it can quote rather than invent.
+- What reaches the model about a student is bounded by the port's DTO: skills, project titles and
+  graduation year. Name, email, university, city and CV have nowhere to go.
+- The Career Coach's endpoints require a policy named `StudentOnly`. The host supplies that name as
+  an alias for `SeekerOnly` rather than editing a tested module to match platform vocabulary.
+
+**`Ai:Enabled` defaults to `false`.** Both features are add-ons — the results page and the help
+widget render without them — so the platform does not attempt AI calls until a key is deliberately
+configured. Turning it on without a working provider means plans fail rather than generate.
+
+> The two modules keep their own `DbContext`s in the same database, and their own
+> `__EFMigrationsHistory`. The platform context uses a separate history table, because it applies the
+> snake_case naming convention and they do not — one shared table cannot have columns that are
+> snake_case to one context and PascalCase to the others.
+
 ## The platform backend
 
 Beyond the two AI modules, this repo now holds the platform itself, built in four clean-architecture
@@ -161,7 +186,7 @@ single highest-value change available if the host constraint ever lifts.
 
 ## Status
 
-298 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
+308 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
 authorization, assessment delivery and scoring, jobs and applications, the talent pool and unlocks,
 credits, admin verification and top-up review, file uploads, rate limiting, notifications,
 English/Arabic, the account lifecycle — email verification, password reset, and PDPL data export and

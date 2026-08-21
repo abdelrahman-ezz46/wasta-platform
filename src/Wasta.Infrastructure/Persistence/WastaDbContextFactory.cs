@@ -17,7 +17,8 @@ public class WastaDbContextFactory : IDesignTimeDbContextFactory<WastaDbContext>
             ?? "Host=localhost;Port=55432;Database=wasta;Username=postgres;Password=wasta_local_dev";
 
         var options = new DbContextOptionsBuilder<WastaDbContext>()
-            .UseNpgsql(connectionString)
+            .UseNpgsql(connectionString, npgsql =>
+                npgsql.MigrationsHistoryTable(WastaDbContext.MigrationsHistoryTable))
             .UseSnakeCaseNamingConvention()
             .Options;
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Wasta.Application.Abstractions;
 using Wasta.Infrastructure.Files;
 using Wasta.Infrastructure.Localization;
@@ -25,7 +26,13 @@ public static class InfrastructureServiceCollectionExtensions
                 "ConnectionStrings:Wasta is not configured. The API will not start without a database.");
 
         services.AddDbContext<WastaDbContext>(options => options
-            .UseNpgsql(connectionString)
+            // Its own history table. The AI modules keep their own DbContexts in
+            // this same database and do NOT use the snake_case convention, so
+            // sharing __EFMigrationsHistory would mean one table whose columns
+            // are snake_case to us and PascalCase to them - which fails at
+            // runtime the moment the second context migrates.
+            .UseNpgsql(connectionString, npgsql =>
+                npgsql.MigrationsHistoryTable(WastaDbContext.MigrationsHistoryTable))
             .UseSnakeCaseNamingConvention());
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
@@ -54,6 +61,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IUploadRepository, UploadRepository>();
         services.AddScoped<IAdminContentRepository, AdminContentRepository>();
         services.AddScoped<IAdminContentQueries, AdminContentRepository>();
+        services.AddScoped<ILoggerAdapter, LoggerAdapter>();
+
+        // Replaced by the real trigger when the AI modules are wired in.
+        services.TryAddScoped<ICoachPlanTrigger, NoCoachPlanTrigger>();
         services.AddScoped<IAccountTokenRepository, AccountTokenRepository>();
         services.AddScoped<IAuditWriter, AuditWriter>();
         services.AddScoped<Application.Features.Auth.IPersonalDataQueries, PersonalDataQueries>();

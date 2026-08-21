@@ -19,6 +19,13 @@ namespace Wasta.Infrastructure.Persistence;
 /// </summary>
 public class WastaDbContext(DbContextOptions<WastaDbContext> options) : DbContext(options)
 {
+    /// <summary>
+    /// Kept separate from the AI modules' history. They share this database but
+    /// not this context's snake_case naming, and one history table cannot be
+    /// both.
+    /// </summary>
+    public const string MigrationsHistoryTable = "__platform_migrations_history";
+
     public DbSet<UserAccount> UserAccounts => Set<UserAccount>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AccountToken> AccountTokens => Set<AccountToken>();

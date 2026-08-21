@@ -25,6 +25,19 @@ echo "Generating migration SQL..."
 dotnet ef migrations script --idempotent --project src/Wasta.CareerCoach --output docs/sql/careercoach.sql
 dotnet ef migrations script --idempotent --project src/Wasta.SupportChat --output docs/sql/supportchat.sql
 
+# The two module scripts above are generated from their own design-time
+# factories, which hard-code a local connection string. That is harmless when
+# only generating SQL, but `dotnet ef database update` against them needs
+# --connection passed explicitly.
+
+# The platform context keeps its own history table. It uses the snake_case
+# naming convention and the two AI modules do not, so one shared
+# __EFMigrationsHistory would have columns that are snake_case to one context
+# and PascalCase to the others - which fails the moment the second one runs.
+dotnet ef migrations script --idempotent \
+    --project src/Wasta.Infrastructure --startup-project src/Wasta.Infrastructure \
+    --output docs/sql/platform.sql
+
 apply() {
   local file="$1"
   echo "Applying $file..."
@@ -38,5 +51,6 @@ apply() {
 
 apply docs/sql/careercoach.sql
 apply docs/sql/supportchat.sql
+apply docs/sql/platform.sql
 
 echo "Done. Both modules' schemas are up to date."

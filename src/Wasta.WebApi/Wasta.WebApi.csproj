@@ -16,6 +16,19 @@
   <ItemGroup>
     <ProjectReference Include="..\Wasta.Application\Wasta.Application.csproj" />
     <ProjectReference Include="..\Wasta.Infrastructure\Wasta.Infrastructure.csproj" />
+    <ProjectReference Include="..\Wasta.Ai\Wasta.Ai.csproj" />
+    <ProjectReference Include="..\Wasta.CareerCoach\Wasta.CareerCoach.csproj" />
+    <ProjectReference Include="..\Wasta.SupportChat\Wasta.SupportChat.csproj" />
+  </ItemGroup>
+
+
+  <!-- The modules keep their prompts and knowledge base as loose files so they
+       can be corrected without a redeploy. Copy them next to the host so the
+       default relative paths in configuration resolve at runtime. -->
+  <ItemGroup>
+    <None Include="..\Wasta.CareerCoach\Prompts\**\*.txt" Link="Prompts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Wasta.SupportChat\Prompts\**\*.txt" Link="Prompts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Wasta.SupportChat\Knowledge\**\*.md" Link="Knowledge\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
