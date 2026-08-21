@@ -24,8 +24,62 @@ jobs:
       - name: Build
         run: dotnet build WastaCareerCoach.sln --no-restore --warnaserror
 
+      # The platform integration tests start a real PostgreSQL container through
+      # Testcontainers, because the in-memory provider ignores column types and
+      # does not enforce unique indexes - the two things those tests exist to
+      # prove. Docker is available on ubuntu-latest runners.
       - name: Test
         run: dotnet test WastaCareerCoach.sln --no-build --verbosity normal
+
+  migrations:
+    name: Migrations apply from clean
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: ci_only
+          POSTGRES_DB: wasta
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      # Proves the migrations apply to an empty database, and that running them
+      # a second time is a no-op. A deploy re-runs this step, so "already
+      # applied" has to be success rather than an error.
+      - name: Apply migrations
+        env:
+          ConnectionStrings__Wasta: "Host=localhost;Port=5432;Database=wasta;Username=postgres;Password=ci_only"
+        run: |
+          dotnet ef database update --project src/Wasta.Infrastructure --startup-project src/Wasta.Infrastructure
+          dotnet ef database update --project src/Wasta.Infrastructure --startup-project src/Wasta.Infrastructure
+
+  docker:
+    name: Container image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The image is the deployment artefact. A Dockerfile that only builds on
+      # someone's laptop is not a deployment.
+      - name: Build API image
+        run: docker build -t wasta-api:ci .
+
+      - name: Build migrations image
+        run: docker build -f Dockerfile.migrations -t wasta-migrations:ci .
 
   frontend:
     name: Typecheck (TypeScript)

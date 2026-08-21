@@ -1,0 +1,59 @@
+# The whole stack: database, migrations, API.
+#
+#   docker compose -f docker-compose.api.yml up --build
+#
+# Migrations run as a separate one-shot service rather than at app start. An API
+# that migrates on boot means every replica races to migrate during a rolling
+# deploy, and a failed migration takes the app down with it instead of failing
+# a deploy step.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wasta_local_dev}
+      POSTGRES_DB: wasta
+    ports:
+      - "55432:5432"
+    volumes:
+      - wasta-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Wasta: "Host=postgres;Port=5432;Database=wasta;Username=postgres;Password=${POSTGRES_PASSWORD:-wasta_local_dev}"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    ports:
+      # Host port is configurable: 8080 is a popular port to already have taken.
+      - "${API_PORT:-8080}:8080"
+    environment:
+      ConnectionStrings__Wasta: "Host=postgres;Port=5432;Database=wasta;Username=postgres;Password=${POSTGRES_PASSWORD:-wasta_local_dev}"
+
+      # No default. The API refuses to start without one, which is the point:
+      # a predictable signing key means anyone can mint an admin token.
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY before starting}
+
+      Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-}
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-}
+    volumes:
+      - wasta-uploads:/var/lib/wasta/uploads
+
+volumes:
+  wasta-pgdata:
+  wasta-uploads:

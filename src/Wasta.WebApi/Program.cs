@@ -10,6 +10,7 @@ using Wasta.Infrastructure.Identity;
 using Wasta.WebApi;
 using Wasta.WebApi.Auth;
 using Wasta.WebApi.Endpoints;
+using Wasta.WebApi.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +104,11 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+// First in the pipeline after forwarded headers, so the correlation id is on
+// every line a request produces - including the ones the exception handler
+// writes.
+app.UseWastaRequestLogging();
 
 // One handler for everything unhandled. Stack traces stop here.
 app.UseExceptionHandler();

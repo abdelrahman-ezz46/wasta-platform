@@ -1,0 +1,20 @@
+# Keep the build context small and keep secrets out of it. Anything listed here
+# is invisible to the build, which matters most for the last two groups.
+**/bin/
+**/obj/
+**/node_modules/
+**/.vs/
+**/.vscode/
+**/.idea/
+.git/
+.github/
+tests/
+streamlit/
+docs/
+src/frontend/
+
+**/.env
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/appsettings.Production.json
+**/*.user

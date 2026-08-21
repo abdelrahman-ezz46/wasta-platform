@@ -130,6 +130,28 @@ dotnet user-secrets set "Jwt:SigningKey" "<48+ random characters>" --project src
 dotnet run --project src/Wasta.WebApi
 ```
 
+### Or the whole stack in containers
+
+```bash
+export JWT_SIGNING_KEY=$(openssl rand -base64 48)
+export SEED_ADMIN_EMAIL=you@example.com SEED_ADMIN_PASSWORD='<a real password>'
+docker compose -f docker-compose.api.yml up --build
+```
+
+Database, migrations and API. Set `API_PORT` if 8080 is taken. `JWT_SIGNING_KEY` is required with
+no default — the compose file refuses to start without it, and so does the API, because a
+predictable signing key means anyone can mint an admin token.
+
+**Migrations run as their own one-shot service, not at app start.** An API that migrates on boot
+means every replica races to migrate during a rolling deploy, and a failed migration takes the app
+down instead of failing a deploy step. Re-running is a no-op — EF skips what is already recorded.
+
+Requests carry an `X-Correlation-Id`, accepted from the caller when supplied and generated
+otherwise, echoed on the response and attached to every log line. Query values named `token`,
+`access_token`, `code` or `password` are redacted before logging: a signed file URL is the whole
+authorisation for that file, so a raw query string in a log is a working download link for every CV
+that was fetched.
+
 Swagger is at `/swagger` in Development. The API refuses to start without a signing key — a
 predictable default would let anyone mint an admin token.
 
@@ -139,7 +161,7 @@ single highest-value change available if the host constraint ever lifts.
 
 ## Status
 
-291 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
+298 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
 authorization, assessment delivery and scoring, jobs and applications, the talent pool and unlocks,
 credits, admin verification and top-up review, file uploads, rate limiting, notifications,
 English/Arabic, the account lifecycle — email verification, password reset, and PDPL data export and

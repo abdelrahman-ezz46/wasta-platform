@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 291 passing (59 Career Coach, 36 Support Chat,
-  133 platform API integration, 39 domain, 16 application, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 298 passing (59 Career Coach, 36 Support Chat,
+  140 platform API integration, 39 domain, 16 application, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -209,6 +209,25 @@ This is the surface a subject-matter expert and a psychometrician use to load re
 - [auto] Content changes are audited
 - [verified] Readiness against the running API reports all six tracks blocked on the same thing:
   *"5 of 5 active questions are seeded placeholders. Scores produced from them are meaningless."*
+
+## Deployability and observability
+
+- [auto] Sensitive query values (`token`, `access_token`, `code`, `password`) are redacted before
+  logging, in any casing, while harmless ones survive — dropping the credential, not the context
+- [auto] CI builds both container images, so a Dockerfile that only works on one laptop fails the
+  pipeline
+- [auto] CI applies migrations to an empty PostgreSQL **twice**, proving they work from clean and
+  that a re-run is a no-op — a deploy re-runs this step, so "already applied" has to be success
+- [verified] The full stack runs in containers: database, one-shot migrations, API. Health live and
+  ready both 200, Arabic reference data served anonymously, seeded admin signs in, wrong password
+  still 401
+- [verified] `X-Correlation-Id` is echoed when supplied and generated when not
+- [verified] A request to `?token=SUPERSECRET…&lang=ar` logged as
+  `token=[redacted]&lang=ar`, with the raw token appearing **zero** times in the container logs
+
+> **The API does not migrate on boot.** Migrations are a separate one-shot service so a rolling
+> deploy does not have every replica racing to migrate, and a bad migration fails a deploy step
+> rather than taking the running app down.
 
 > **Immutability is the reproducibility guarantee.** A published score has to stay explainable, so
 > anything it was computed from is frozen once it has been used. The remedy for a mistake is always a

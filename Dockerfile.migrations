@@ -1,0 +1,15 @@
+# Applies EF migrations, then exits. Run as a deploy step before the API rolls.
+FROM mcr.microsoft.com/dotnet/sdk:9.0
+WORKDIR /src
+
+COPY global.json Directory.Build.props ./
+COPY .config/ .config/
+COPY src/ src/
+
+RUN dotnet tool restore
+
+# Idempotent by nature: EF skips migrations already recorded in
+# __EFMigrationsHistory, so re-running a deploy is a no-op rather than an error.
+ENTRYPOINT ["dotnet", "ef", "database", "update", \
+    "--project", "src/Wasta.Infrastructure", \
+    "--startup-project", "src/Wasta.Infrastructure"]
