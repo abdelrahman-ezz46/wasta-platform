@@ -179,3 +179,58 @@ public class ResetPasswordHandler(
         return Result.Success();
     }
 }
+
+public sealed record LogoutCommand(string? RefreshToken, bool AllSessions);
+
+/// <summary>
+/// Ends a session.
+///
+/// Without this a user has no way to revoke their own refresh token: signing
+/// out on a shared machine would clear the browser and leave a credential valid
+/// for another thirty days. The access token still lives out its fifteen
+/// minutes - inherent to a stateless token, and the reason that lifetime is
+/// short.
+/// </summary>
+public class LogoutHandler(
+    IRefreshTokenRepository refreshTokens,
+    ITokenService tokenService,
+    IUnitOfWork unitOfWork,
+    IClock clock)
+{
+    public async Task<Result> HandleAsync(long userId, LogoutCommand command, CancellationToken ct = default)
+    {
+        var now = clock.UtcNow;
+
+        if (command.AllSessions)
+        {
+            await refreshTokens.RevokeAllForUserAsync(userId, now, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+            return Result.Success();
+        }
+
+        if (string.IsNullOrWhiteSpace(command.RefreshToken))
+        {
+            return Result.Failure(
+                "auth.refresh_token_required",
+                "Supply the refresh token to revoke, or ask for all sessions.");
+        }
+
+        var stored = await refreshTokens.FindByHashAsync(
+            tokenService.HashOpaqueToken(command.RefreshToken), ct);
+
+        // Someone else's token is silently a no-op rather than an error.
+        // Telling a caller their guess was wrong is a probe result, and signing
+        // out is not somewhere to hand one out.
+        if (stored is null || stored.UserId != userId)
+        {
+            return Result.Success();
+        }
+
+        // The whole rotation family, not the single token. Revoking one link
+        // leaves its successor alive, which is the opposite of signing out.
+        await refreshTokens.RevokeFamilyAsync(stored.FamilyId, now, ct);
+        await unitOfWork.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+}

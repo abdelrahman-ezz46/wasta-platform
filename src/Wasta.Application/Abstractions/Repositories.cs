@@ -43,6 +43,8 @@ public interface IRefreshTokenRepository
 
     Task RevokeFamilyAsync(long familyId, DateTimeOffset now, CancellationToken ct = default);
 
+    Task RevokeAllForUserAsync(long userId, DateTimeOffset now, CancellationToken ct = default);
+
     void Add(RefreshToken token);
 }
 

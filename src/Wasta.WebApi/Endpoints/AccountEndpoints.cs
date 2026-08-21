@@ -9,6 +9,8 @@ public static class AccountEndpoints
 {
     public sealed record ConfirmEmailRequest(string Token);
 
+    public sealed record LogoutRequest(string? RefreshToken, bool AllSessions = false);
+
     public sealed record ForgotPasswordRequest(string Email);
 
     public sealed record ResetPasswordRequest(string Token, string NewPassword);
@@ -70,6 +72,19 @@ public static class AccountEndpoints
         .AllowAnonymous()
         .WithSummary("Set a new password from a reset link. Ends every existing session.")
         .ProducesProblem(StatusCodes.Status400BadRequest);
+
+        auth.MapPost("/logout", async (
+            LogoutRequest body, ClaimsPrincipal user, LogoutHandler handler, CancellationToken ct) =>
+        {
+            var userId = user.UserId();
+            return userId is null
+                ? Results.Unauthorized()
+                : ProblemMapping.ToResponse(
+                    await handler.HandleAsync(
+                        userId.Value, new LogoutCommand(body.RefreshToken, body.AllSessions), ct));
+        })
+        .RequireAuthorization()
+        .WithSummary("End a session by revoking its refresh token, or every session with allSessions.");
 
         var me = app.MapGroup("/api/me").WithTags("Account").RequireAuthorization();
 

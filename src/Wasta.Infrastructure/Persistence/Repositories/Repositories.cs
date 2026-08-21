@@ -58,6 +58,18 @@ public sealed class RefreshTokenRepository(WastaDbContext db) : IRefreshTokenRep
         }
     }
 
+    public async Task RevokeAllForUserAsync(long userId, DateTimeOffset now, CancellationToken ct = default)
+    {
+        var live = await db.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null)
+            .ToListAsync(ct);
+
+        foreach (var token in live)
+        {
+            token.Revoke(now);
+        }
+    }
+
     public void Add(RefreshToken token) => db.RefreshTokens.Add(token);
 }
 

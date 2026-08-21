@@ -28,6 +28,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<RegisterCompanyHandler>();
         services.AddScoped<LoginHandler>();
         services.AddScoped<RefreshHandler>();
+        services.AddScoped<LogoutHandler>();
         services.AddScoped<RequestEmailVerificationHandler>();
         services.AddScoped<ConfirmEmailHandler>();
         services.AddScoped<ForgotPasswordHandler>();

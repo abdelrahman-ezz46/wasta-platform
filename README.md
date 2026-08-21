@@ -186,7 +186,7 @@ single highest-value change available if the host constraint ever lifts.
 
 ## Status
 
-308 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
+312 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
 authorization, assessment delivery and scoring, jobs and applications, the talent pool and unlocks,
 credits, admin verification and top-up review, file uploads, rate limiting, notifications,
 English/Arabic, the account lifecycle — email verification, password reset, and PDPL data export and

@@ -399,6 +399,78 @@ public class AccountTests(WastaApiFactory factory)
         }
     }
 
+    // ---------- signing out ----------
+
+    [Fact]
+    public async Task Logging_out_revokes_the_refresh_token()
+    {
+        var user = await RegisterAsync();
+
+        var out1 = await SendAsync(
+            HttpMethod.Post, "/api/auth/logout", user.AccessToken,
+            new { refreshToken = user.RefreshToken });
+        Assert.Equal(HttpStatusCode.NoContent, out1.StatusCode);
+
+        // Without this a user has no way to revoke their own session: clearing
+        // the browser on a shared machine would leave the credential valid for
+        // another thirty days.
+        var refreshed = await _client.PostAsJsonAsync(
+            "/api/auth/refresh", new { refreshToken = user.RefreshToken });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, refreshed.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logging_out_of_all_sessions_ends_every_one_of_them()
+    {
+        var user = await RegisterAsync();
+
+        // A second session, as if from another device.
+        var second = await _client.PostAsJsonAsync(
+            "/api/auth/login", new { email = user.Email, password = "Passw0rd123" });
+        var secondRefresh = (await ReadJson(second)).GetProperty("refreshToken").GetString();
+
+        await SendAsync(
+            HttpMethod.Post, "/api/auth/logout", user.AccessToken, new { allSessions = true });
+
+        var first = await _client.PostAsJsonAsync(
+            "/api/auth/refresh", new { refreshToken = user.RefreshToken });
+        var other = await _client.PostAsJsonAsync(
+            "/api/auth/refresh", new { refreshToken = secondRefresh });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, other.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logging_out_with_someone_elses_token_changes_nothing()
+    {
+        var mine = await RegisterAsync();
+        var theirs = await RegisterAsync();
+
+        var response = await SendAsync(
+            HttpMethod.Post, "/api/auth/logout", mine.AccessToken,
+            new { refreshToken = theirs.RefreshToken });
+
+        // A no-op, not an error: telling a caller their guess was wrong is a
+        // probe result, and their session must obviously survive.
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var stillValid = await _client.PostAsJsonAsync(
+            "/api/auth/refresh", new { refreshToken = theirs.RefreshToken });
+
+        Assert.Equal(HttpStatusCode.OK, stillValid.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logging_out_needs_authentication()
+    {
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/logout", new { allSessions = true });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     [Fact]
     public async Task Security_events_are_written_to_the_audit_log()
     {

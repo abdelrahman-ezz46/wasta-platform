@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 308 passing (59 Career Coach, 36 Support Chat,
-  150 platform API integration, 39 domain, 16 application, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 312 passing (59 Career Coach, 36 Support Chat,
+  154 platform API integration, 39 domain, 16 application, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -257,6 +257,39 @@ These prove the five ports actually connect, which until now was asserted rather
 > **Immutability is the reproducibility guarantee.** A published score has to stay explainable, so
 > anything it was computed from is frozen once it has been used. The remedy for a mistake is always a
 > new version, never an edit — which is also why forms and scoring rules are versioned per track.
+
+## Security review findings
+
+A pass over the branch's own code — auth, credit spending, uploads, erasure, ownership.
+
+**Fixed:**
+
+- [auto] **There was no way to sign out.** A user could not revoke their own refresh token, so
+  clearing a browser on a shared machine left a credential valid for another 30 days. `POST
+  /api/auth/logout` now revokes a session or all of them, and revokes the whole rotation family
+  rather than one link — revoking a single token leaves its successor alive
+- [auto] Logging out with someone else's token is a silent no-op, not an error. Telling a caller
+  their guess was wrong is a probe result
+
+**Checked and sound:**
+
+- Both raw-SQL sites use interpolated `FromSql`, which EF parameterises — not injection
+- Every anonymous endpoint is deliberately anonymous: login, register, password reset, email
+  confirmation, signed file download, and reference data for the sign-up form
+- Ownership is checked against the database on every resource route, and reports 404 rather than 403
+
+**Open, and needing a decision rather than a fix:**
+
+- **Email verification is never enforced.** The machinery works, but `IsEmailVerified` gates
+  nothing: an account registered with someone else's address can use the platform fully. The
+  strongest case for a gate is the talent pool — a company spends real credits to unlock a
+  candidate whose address was never confirmed. Where to put the gate changes the signup funnel, so
+  it is a product decision, not a code one
+- **An access token outlives a logout or an erasure by up to 15 minutes.** Inherent to a stateless
+  token; the short lifetime is the mitigation. Revoking sooner needs a denylist and a lookup on
+  every request
+- **CORS is not configured at all**, so no browser on another origin can call this API. That is the
+  safe default rather than a hole, but it blocks the frontend until an allowed origin is set
 
 > **Verification and reset emails bypass the notification outbox on purpose.** The outbox persists a
 > payload, and the payload would have to carry the raw token — queueing these would put a bearer
