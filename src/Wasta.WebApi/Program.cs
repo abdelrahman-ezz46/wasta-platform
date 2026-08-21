@@ -141,6 +141,7 @@ app.MapJobEndpoints();
 app.MapApplicationEndpoints();
 app.MapTalentPoolEndpoints();
 app.MapAdminEndpoints();
+app.MapAdminContentEndpoints();
 app.MapFileEndpoints();
 app.MapNotificationEndpoints();
 app.MapLocalizationEndpoints();

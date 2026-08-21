@@ -139,11 +139,14 @@ single highest-value change available if the host constraint ever lifts.
 
 ## Status
 
-257 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
+291 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
 authorization, assessment delivery and scoring, jobs and applications, the talent pool and unlocks,
 credits, admin verification and top-up review, file uploads, rate limiting, notifications,
-English/Arabic, and the account lifecycle — email verification, password reset, and PDPL data export
-and erasure.
+English/Arabic, the account lifecycle — email verification, password reset, and PDPL data export and
+erasure — and admin content management.
+
+`GET /api/admin/content/readiness` reports, per track, what still stands between the platform and a
+meaningful score. Today every track answers the same way: its questions are seeded placeholders.
 
 **Right-to-left layout is a frontend concern and is not part of this backend.** What the server owns
 is language: `Accept-Language` (or `?lang=`) selects the language of anything it renders, a stored

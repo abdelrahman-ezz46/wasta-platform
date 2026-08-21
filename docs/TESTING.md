@@ -19,8 +19,8 @@ Status keys used below:
 ## Setup
 
 - [auto] `dotnet build WastaCareerCoach.sln` clean — 0 warnings, 0 errors (CI enforces `--warnaserror`)
-- [auto] `dotnet test WastaCareerCoach.sln` — 257 passing (59 Career Coach, 36 Support Chat,
-  120 platform API integration, 18 domain, 16 application, 8 architecture)
+- [auto] `dotnet test WastaCareerCoach.sln` — 291 passing (59 Career Coach, 36 Support Chat,
+  133 platform API integration, 39 domain, 16 application, 8 architecture)
 - [auto] Platform API integration tests run against a real PostgreSQL container via Testcontainers,
   not the in-memory provider — unique indexes and `jsonb` columns are actually exercised
 - [auto] Architecture tests fail the build if a layer gains a forbidden dependency
@@ -184,6 +184,35 @@ Status keys used below:
 - [auto] A password reset writes an audit row
 - [verified] Whole flow exercised against the running API: link emitted, reset accepted (204), old
   password refused (401), new password accepted (200), token reuse refused (400)
+
+## Admin content management
+
+This is the surface a subject-matter expert and a psychometrician use to load real content.
+
+- [auto] Only an admin can reach it
+- [auto] A question with **no** correct option, or **two**, is refused — one makes it unscoreable for
+  everybody, the other makes it ambiguous and only one right answer earns the mark
+- [auto] Bands must tile 0–100: a gap drops a score into no band at all, an overlap makes the label
+  depend on row order. The error names the uncovered range
+- [auto] Weights must sum to 1 **and** cover every section on the track. A missing section is the
+  dangerous one: the calculator renormalises over what it is handed, so an omitted section silently
+  vanishes from the score instead of failing
+- [auto] A form must hold exactly its declared number of questions, all from its own track, no repeats
+- [auto] Publishing a form retires the track's previous one — two live forms would make which one a
+  candidate sits depend on ordering
+- [auto] **Content used to score a submitted attempt is immutable.** Editing the question, changing
+  the form's composition, or changing the bands all return 409. Retiring a question stays allowed,
+  because it removes it from future forms without touching past scores
+- [auto] A track built entirely through the admin API can be sat by a seeker and scored correctly
+- [auto] Readiness counts seeded placeholders separately from real questions
+- [auto] A corrected translation takes effect immediately — the localizer cache is invalidated
+- [auto] Content changes are audited
+- [verified] Readiness against the running API reports all six tracks blocked on the same thing:
+  *"5 of 5 active questions are seeded placeholders. Scores produced from them are meaningless."*
+
+> **Immutability is the reproducibility guarantee.** A published score has to stay explainable, so
+> anything it was computed from is frozen once it has been used. The remedy for a mistake is always a
+> new version, never an edit — which is also why forms and scoring rules are versioned per track.
 
 > **Verification and reset emails bypass the notification outbox on purpose.** The outbox persists a
 > payload, and the payload would have to carry the raw token — queueing these would put a bearer

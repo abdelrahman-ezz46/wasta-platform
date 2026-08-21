@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Wasta.Application.Features.Applications;
 using Wasta.Application.Features.Assessments;
 using Wasta.Application.Features.Auth;
+using Wasta.Application.Features.Admin;
 using Wasta.Application.Features.Credits;
 using Wasta.Application.Features.Files;
 using Wasta.Application.Features.Notifications;
@@ -80,6 +81,23 @@ public static class ApplicationServiceCollectionExtensions
 
         services.AddScoped<GetReferenceDataHandler>();
         services.AddScoped<SetLanguageHandler>();
+
+        services.AddScoped<TrackReadinessHandler>();
+        services.AddScoped<CreateTrackHandler>();
+        services.AddScoped<UpdateTrackHandler>();
+        services.AddScoped<CreateSectionHandler>();
+        services.AddScoped<CreateQuestionHandler>();
+        services.AddScoped<UpdateQuestionHandler>();
+        services.AddScoped<DeactivateQuestionHandler>();
+        services.AddScoped<CreateFormHandler>();
+        services.AddScoped<SetFormQuestionsHandler>();
+        services.AddScoped<ActivateFormHandler>();
+        services.AddScoped<CreateScoringRuleHandler>();
+        services.AddScoped<SetBandsHandler>();
+        services.AddScoped<SetWeightsHandler>();
+        services.AddScoped<SetSectionFeedbackHandler>();
+        services.AddScoped<ActivateScoringRuleHandler>();
+        services.AddScoped<SetTranslationHandler>();
 
         return services;
     }

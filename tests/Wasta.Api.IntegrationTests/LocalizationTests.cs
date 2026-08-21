@@ -46,7 +46,16 @@ public class LocalizationTests(WastaApiFactory factory)
         var reference = await GetReferenceAsync();
 
         Assert.Equal("en", reference.GetProperty("language").GetString());
-        Assert.Equal(6, reference.GetProperty("tracks").GetArrayLength());
+
+        // At least the six seeded tracks. Not exactly six: the admin content
+        // tests create tracks in this same database, and a test that breaks
+        // when an unrelated test adds a row is testing the wrong thing.
+        var trackNames = reference.GetProperty("tracks").EnumerateArray()
+            .Select(t => t.GetProperty("name").GetString()!).ToList();
+
+        Assert.Contains("Frontend Engineering", trackNames);
+        Assert.Contains("Data Science", trackNames);
+        Assert.True(trackNames.Count >= 6);
         Assert.NotEmpty(reference.GetProperty("applicationStatuses").EnumerateArray());
         Assert.NotEmpty(reference.GetProperty("locations").EnumerateArray());
     }

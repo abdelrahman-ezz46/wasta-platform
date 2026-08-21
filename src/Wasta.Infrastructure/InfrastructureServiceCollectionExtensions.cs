@@ -52,6 +52,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ICompanyRepositoryForAdmin, CompanyRepositoryForAdmin>();
         services.AddScoped<Application.Features.TalentPool.IUnlockService, UnlockService>();
         services.AddScoped<IUploadRepository, UploadRepository>();
+        services.AddScoped<IAdminContentRepository, AdminContentRepository>();
+        services.AddScoped<IAdminContentQueries, AdminContentRepository>();
         services.AddScoped<IAccountTokenRepository, AccountTokenRepository>();
         services.AddScoped<IAuditWriter, AuditWriter>();
         services.AddScoped<Application.Features.Auth.IPersonalDataQueries, PersonalDataQueries>();
