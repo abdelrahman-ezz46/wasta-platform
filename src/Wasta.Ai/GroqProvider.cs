@@ -42,7 +42,7 @@ public class GroqProvider : IAiProvider
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", config.ApiKey);
         request.Content = JsonContent.Create(new OpenAiChatRequest
         {
-            Model = callOptions?.Model ?? config.Model,
+            Model = AiModelResolver.ResolveModel(callOptions?.Model, config.Model),
             Messages = messages,
             MaxTokens = callOptions?.MaxTokens ?? _options.MaxTokens,
             Temperature = callOptions?.Temperature ?? _options.Temperature,

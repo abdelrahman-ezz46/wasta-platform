@@ -85,6 +85,37 @@ public class PerFeatureModelTests
         Assert.Contains("\"model\":\"default-model\"", handler.RequestBody);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Groq_FallsBackToProviderModel_WhenOverrideIsEmpty(string emptyOverride)
+    {
+        var handler = new CapturingHandler();
+        var provider = new GroqProvider(new SingleClientFactory(handler), Options.Create(OptionsWith("default-model")), NullLogger<GroqProvider>.Instance);
+
+        await provider.CompleteAsync("system", [new AiChatTurn("user", "hi")], new AiCallOptions(Model: emptyOverride), CancellationToken.None);
+
+        // Configuration binds an absent value to "" rather than null, and the
+        // README documents `"Model": ""` as meaning "use the provider default".
+        // A plain ?? only falls through on null, so this sent an EMPTY model
+        // name and Groq answered 404 - which reads exactly like a deprecated
+        // model and cost a real debugging session to tell apart.
+        Assert.Contains("\"model\":\"default-model\"", handler.RequestBody);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Gemini_FallsBackToProviderModel_WhenOverrideIsEmpty(string emptyOverride)
+    {
+        var handler = new CapturingHandler();
+        var provider = new GeminiProvider(new SingleClientFactory(handler), Options.Create(OptionsWith("default-model")), NullLogger<GeminiProvider>.Instance);
+
+        await provider.CompleteAsync("system", [new AiChatTurn("user", "hi")], new AiCallOptions(Model: emptyOverride), CancellationToken.None);
+
+        Assert.Contains("default-model", handler.RequestUri!.ToString());
+    }
+
     [Fact]
     public async Task Gemini_UsesPerCallModelInTheUrl_WhenOverridden()
     {

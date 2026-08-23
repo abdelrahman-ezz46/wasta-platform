@@ -186,7 +186,7 @@ single highest-value change available if the host constraint ever lifts.
 
 ## Status
 
-312 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
+316 tests passing, 0 warnings. **Not yet production-ready** — the platform API covers authentication,
 authorization, assessment delivery and scoring, jobs and applications, the talent pool and unlocks,
 credits, admin verification and top-up review, file uploads, rate limiting, notifications,
 English/Arabic, the account lifecycle — email verification, password reset, and PDPL data export and
@@ -213,6 +213,9 @@ boot:
 To exercise verification or password reset locally, set `Notifications:LogBodies=true` — the emailed
 link is then written to the log in full. It is off by default and must stay off anywhere that keeps
 logs, because those links are bearer credentials. The knowledge base has unresolved TODOs, the seeded assessment items
-are placeholders rather than a validated instrument, and the AI guardrail rows have not been run
-against a real model.
+are placeholders rather than a validated instrument, and the seeded assessment items are placeholders rather than a validated instrument.
+
+The AI guardrail rows **have** now been run against a real model — Groq, 21 August 2026, 16 passed,
+0 failed. Re-run `./scripts/verify-guardrails.sh` after any prompt change and periodically
+regardless: providers retire model IDs without notice, and that run found two already dead.
 [docs/TESTING.md](docs/TESTING.md) tracks exactly what is verified and what is not.
