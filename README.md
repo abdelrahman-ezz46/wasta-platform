@@ -58,6 +58,7 @@ The migration script is idempotent — the same command works on a fresh or exis
 | `src/Wasta.Infrastructure` | EF Core, repositories, JWT issuing, password hashing |
 | `src/Wasta.WebApi` | The production API. JWT auth, role and resource authorization, OpenAPI |
 | `streamlit/` | Visual preview app for demos (calls the real API) |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | Continuing this work in a new session: decisions, traps, and what is left |
 | `docs/TESTING.md` | Acceptance checklist with current verified/blocked status |
 | `docs/KNOWLEDGE-BASE-QUESTIONNAIRE.md` | The questions a product owner must answer to unblock the chatbot |
 
