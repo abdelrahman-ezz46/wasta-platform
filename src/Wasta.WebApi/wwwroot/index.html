@@ -4,12 +4,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Wasta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <script>
   // Cache-bust the stylesheet and script.
   //
-  // This app is only served in Development or behind an explicit Demo:Enabled,
-  // and a browser holding a stale app.js means you debug code that is no longer
-  // running - which cost real time once already. Correctness beats caching here.
+  // This app is served only in Development or behind an explicit Demo:Enabled,
+  // and a browser holding a stale app.js means debugging code that is no longer
+  // running - which cost real time here once. Correctness beats caching.
   const v = Date.now();
   document.write(
     '<link rel="stylesheet" href="/app.css?v=' + v + '" />' +

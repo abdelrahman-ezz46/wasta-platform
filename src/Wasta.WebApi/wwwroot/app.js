@@ -102,39 +102,68 @@ const signedIn  = () => !!session.get();
 /* ---------------- chrome ---------------- */
 function chrome() {
   const s = session.get();
-  const path = location.hash.slice(1);
+  const path = location.hash.slice(1).split("?")[0];
+
+  // Signed out - or on a page that belongs to signed-out users - gets a centred
+  // card rather than the portal shell. The path check matters: a session can
+  // outlive the account it refers to (a reset database, a deleted user), and
+  // rendering a sidebar around a sign-in form is the visible symptom of that.
+  const signedOutPage = ["/login", "/register", "/forgot", "/verify", "/mailbox"]
+    .some(p => path === p || path.startsWith(p + "/"));
+
+  if (!s || signedOutPage) {
+    $("#shell").innerHTML = `<div class="auth-page"><div id="view"></div></div>`;
+    return;
+  }
+
   const on = p => path.startsWith(p) ? "on" : "";
-  let nav = "";
-  if (s?.role === "Seeker") {
-    nav = `<a href="#/me" class="${on('/me')}">Dashboard</a>
-           <a href="#/assessment" class="${on('/assessment')}">Assessment</a>
-           <a href="#/jobs" class="${on('/jobs')}">Jobs</a>
-           <a href="#/applications" class="${on('/applications')}">Applications</a>`;
-  } else if (s?.role === "Company") {
-    nav = `<a href="#/company" class="${on('/company')}">Dashboard</a>
-           <a href="#/talent" class="${on('/talent')}">Talent pool</a>
-           <a href="#/company/jobs" class="${on('/company/jobs')}">My jobs</a>
-           <a href="#/credits" class="${on('/credits')}">Credits</a>`;
-  } else if (s?.role === "Admin") {
-    nav = `<a href="#/admin" class="${on('/admin')}">Review queue</a>
-           <a href="#/admin/content" class="${on('/admin/content')}">Content</a>`;
+  const item = (href, icon, label) =>
+    `<a href="${href}" class="${on(href.slice(1))}"><span class="ic">${icon}</span>${label}</a>`;
+
+  let nav = "", portal = "Portal", tag = "";
+  if (s.role === "Seeker") {
+    portal = "Student Portal"; tag = "Student";
+    nav = item("#/me", "◈", "Dashboard")
+        + item("#/assessment", "✎", "Assessment")
+        + item("#/jobs", "▤", "Jobs")
+        + item("#/applications", "☰", "Applications");
+  } else if (s.role === "Company") {
+    portal = "Company Portal"; tag = "Company";
+    nav = item("#/company", "◈", "Dashboard")
+        + item("#/talent", "☺", "Talent Pool")
+        + item("#/company/jobs", "▤", "Jobs")
+        + item("#/credits", "◆", "Credits");
+  } else {
+    portal = "Administration"; tag = "Admin";
+    nav = item("#/admin", "☑", "Review queue")
+        + item("#/admin/content", "▤", "Content");
   }
 
   $("#shell").innerHTML = `
-    <div class="topbar">
-      <div class="brand"><div class="mark">W</div> Wasta</div>
-      <nav>${nav}</nav>
-      <div class="spacer"></div>
-      <div class="who">
-        ${s ? `<span>${esc(s.email || s.role)}</span>
-               <button class="btn-ghost btn-sm" id="signout">Sign out</button>`
-            : `<a href="#/login" style="color:#fff">Sign in</a>`}
+    <div class="shell">
+      <aside class="side">
+        <div class="logo">
+          <div class="mark">W</div><span class="word">Wasta</span>
+          <span class="tag">${esc(tag)}</span>
+        </div>
+        <div class="kicker">${esc(portal)}</div>
+        <nav>${nav}</nav>
+        <div class="foot">
+          <div class="who">${esc(s.email || s.role)}</div>
+          <button class="btn-ghost btn-sm" id="signout" style="width:100%">Sign out</button>
+        </div>
+      </aside>
+      <div class="main">
+        <div class="topstrip">
+          <span class="title">${esc(portal)}</span>
+          <span class="spacer"></span>
+          <a class="small muted" href="#/mailbox">Dev mailbox</a>
+        </div>
+        <div class="wrap"><div id="view"></div></div>
       </div>
-    </div>
-    <div class="wrap"><div id="view"></div></div>`;
+    </div>`;
 
-  const out = $("#signout");
-  if (out) out.onclick = async () => {
+  $("#signout").onclick = async () => {
     const t = session.get()?.refreshToken;
     if (t) await api("POST", "/api/auth/logout", { refreshToken: t });
     session.clear();
@@ -152,7 +181,8 @@ function head(title, sub) {
 route(/^\/login$/, async host => {
   host.innerHTML = `
     <div class="auth-wrap">
-      <div class="page-head center"><h1>Sign in to Wasta</h1><p>Prove skill, not connections.</p></div>
+      <div class="auth-brand"><div class="mark">W</div><span class="word">Wasta</span></div>
+      <div class="page-head center"><h1>Sign in</h1><p>Prove skill, not connections.</p></div>
       <div class="card">
         <div id="msg"></div>
         <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username" /></div>
@@ -195,6 +225,7 @@ route(/^\/register$/, async host => {
   const ref = await reference();
   host.innerHTML = `
     <div class="auth-wrap">
+      <div class="auth-brand"><div class="mark">W</div><span class="word">Wasta</span></div>
       <div class="page-head center"><h1>Create an account</h1></div>
       <div class="tabs">
         <button id="t-seeker" class="on">I'm a student</button>
@@ -258,6 +289,7 @@ route(/^\/register$/, async host => {
 route(/^\/forgot$/, async host => {
   host.innerHTML = `
     <div class="auth-wrap">
+      <div class="auth-brand"><div class="mark">W</div><span class="word">Wasta</span></div>
       <div class="page-head center"><h1>Reset your password</h1></div>
       <div class="card">
         <div id="msg"></div>
