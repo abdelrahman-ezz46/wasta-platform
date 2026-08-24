@@ -154,10 +154,135 @@ public class AccountTests(WastaApiFactory factory)
 
     // ---------- password reset ----------
 
+    /// <summary>
+    /// Sign-in is gated on a confirmed address, so any test that logs in has to
+    /// confirm first - exactly as a real student would.
+    ///
+    /// Deliberately goes through the ANONYMOUS resend: before a successful login
+    /// there is no access token, so the authenticated request endpoint is out of
+    /// reach. Every test that calls this also proves that route back works.
+    /// </summary>
+    private async Task ConfirmEmailAsync(string email)
+    {
+        var resend = await SendAsync(HttpMethod.Post, "/api/auth/verify-email/resend", body: new { email });
+        Assert.Equal(HttpStatusCode.Accepted, resend.StatusCode);
+
+        var token = TokenSentTo(email);
+        Assert.False(string.IsNullOrWhiteSpace(token));
+
+        var confirm = await SendAsync(
+            HttpMethod.Post, "/api/auth/verify-email/confirm", body: new { token });
+        Assert.True(confirm.IsSuccessStatusCode);
+    }
+
+    [Fact]
+    public async Task A_mail_outage_does_not_reveal_which_addresses_are_registered()
+    {
+        var user = await RegisterAsync();
+        var stranger = UniqueEmail("ghost");
+
+        factory.Sender.ThrowOnSend = true;
+        try
+        {
+            // Mail is only ever attempted for an address that exists, so an
+            // escaping send failure would answer 500 for registered addresses
+            // and 202 for everyone else - a membership oracle that only opens
+            // while the provider is down.
+            var known = await SendAsync(
+                HttpMethod.Post, "/api/auth/forgot-password", body: new { email = user.Email });
+            var unknown = await SendAsync(
+                HttpMethod.Post, "/api/auth/forgot-password", body: new { email = stranger });
+
+            Assert.Equal(HttpStatusCode.Accepted, known.StatusCode);
+            Assert.Equal(known.StatusCode, unknown.StatusCode);
+
+            // The same must hold for the anonymous resend.
+            var knownResend = await SendAsync(
+                HttpMethod.Post, "/api/auth/verify-email/resend", body: new { email = user.Email });
+            var unknownResend = await SendAsync(
+                HttpMethod.Post, "/api/auth/verify-email/resend", body: new { email = stranger });
+
+            Assert.Equal(HttpStatusCode.Accepted, knownResend.StatusCode);
+            Assert.Equal(knownResend.StatusCode, unknownResend.StatusCode);
+        }
+        finally
+        {
+            factory.Sender.ThrowOnSend = false;
+        }
+    }
+
+    [Fact]
+    public async Task An_unconfirmed_address_cannot_sign_in()
+    {
+        var user = await RegisterAsync();
+
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/login", new { email = user.Email, password = "Passw0rd123" });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(
+            "auth.email_not_verified", (await ReadJson(response)).GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task A_student_who_never_got_the_link_can_get_back_in_without_signing_in()
+    {
+        var user = await RegisterAsync();
+
+        // The deadlock this guards against: sign-in is refused, and the
+        // authenticated resend endpoint needs a token that only a successful
+        // sign-in would produce. Without an anonymous route back, this account
+        // is lost to support.
+        var blocked = await _client.PostAsJsonAsync(
+            "/api/auth/login", new { email = user.Email, password = "Passw0rd123" });
+        Assert.Equal(HttpStatusCode.Forbidden, blocked.StatusCode);
+
+        await ConfirmEmailAsync(user.Email);
+
+        var after = await _client.PostAsJsonAsync(
+            "/api/auth/login", new { email = user.Email, password = "Passw0rd123" });
+        Assert.Equal(HttpStatusCode.OK, after.StatusCode);
+    }
+
+    [Fact]
+    public async Task Resending_a_confirmation_link_reveals_nothing_about_the_address()
+    {
+        var stranger = UniqueEmail("nobody");
+
+        var response = await SendAsync(
+            HttpMethod.Post, "/api/auth/verify-email/resend", body: new { email = stranger });
+
+        // Accepted like any other - and, the part that actually matters, nothing
+        // was sent. An identical response is worthless if the side effects differ.
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Null(factory.Sender.LastTo(stranger));
+    }
+
+    [Fact]
+    public async Task Resending_to_an_already_confirmed_address_sends_nothing_new()
+    {
+        var user = await RegisterAsync();
+        await ConfirmEmailAsync(user.Email);
+        var before = factory.Sender.Sent.Count(m => m.Recipient == user.Email);
+
+        var response = await SendAsync(
+            HttpMethod.Post, "/api/auth/verify-email/resend", body: new { email = user.Email });
+
+        // Same 202 as every other case. Replying "already confirmed" would tell a
+        // stranger the address is registered.
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Equal(before, factory.Sender.Sent.Count(m => m.Recipient == user.Email));
+    }
+
     [Fact]
     public async Task A_reset_link_changes_the_password_and_the_old_one_stops_working()
     {
         var user = await RegisterAsync();
+
+        // Confirm BEFORE requesting the reset: TokenSentTo reads the most recent
+        // mail, and confirming afterwards would leave the verification link, not
+        // the reset link, as the last one sent.
+        await ConfirmEmailAsync(user.Email);
 
         var requested = await SendAsync(
             HttpMethod.Post, "/api/auth/forgot-password", body: new { email = user.Email });
@@ -424,6 +549,7 @@ public class AccountTests(WastaApiFactory factory)
     public async Task Logging_out_of_all_sessions_ends_every_one_of_them()
     {
         var user = await RegisterAsync();
+        await ConfirmEmailAsync(user.Email);
 
         // A second session, as if from another device.
         var second = await _client.PostAsJsonAsync(

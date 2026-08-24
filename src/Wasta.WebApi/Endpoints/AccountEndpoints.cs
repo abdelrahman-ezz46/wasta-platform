@@ -13,6 +13,8 @@ public static class AccountEndpoints
 
     public sealed record ForgotPasswordRequest(string Email);
 
+    public sealed record ResendVerificationRequest(string Email);
+
     public sealed record ResetPasswordRequest(string Token, string NewPassword);
 
     public static IEndpointRouteBuilder MapAccountEndpoints(this IEndpointRouteBuilder app)
@@ -31,6 +33,19 @@ public static class AccountEndpoints
         })
         .RequireAuthorization()
         .WithSummary("Send a fresh confirmation link. Any previous link stops working.");
+
+        auth.MapPost("/verify-email/resend", async (
+            ResendVerificationRequest body, ResendEmailVerificationHandler handler, CancellationToken ct) =>
+        {
+            await handler.HandleAsync(new ResendEmailVerificationCommand(body.Email), ct);
+
+            // Always 202 - registered or not, confirmed or not, the answer is
+            // byte-identical. Same reasoning as forgot-password.
+            return Results.Accepted();
+        })
+        .AllowAnonymous()
+        .WithSummary("Send a fresh confirmation link without signing in. Always accepted.")
+        .Produces(StatusCodes.Status202Accepted);
 
         auth.MapPost("/verify-email/confirm", async (
             ConfirmEmailRequest body, ConfirmEmailHandler handler, CancellationToken ct) =>

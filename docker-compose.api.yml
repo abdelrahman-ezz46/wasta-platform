@@ -51,8 +51,41 @@ services:
 
       Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-}
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-}
+
+      # Off unless you start the scanning profile below. On, with no reachable
+      # clamd, uploads fail rather than being stored unscanned.
+      VirusScanning__Enabled: ${VIRUS_SCANNING:-false}
+      VirusScanning__Host: clamav
     volumes:
       - wasta-uploads:/var/lib/wasta/uploads
+
+  # Malware scanning for uploads. Opt in:
+  #
+  #   VIRUS_SCANNING=true docker compose -f docker-compose.api.yml \
+  #     --profile scanning up --build
+  #
+  # Kept out of the default stack deliberately. The image is large and clamd
+  # spends its first minute or two loading signatures before it accepts a
+  # connection at all - uploads answer 503 until it is ready, which is the
+  # fail-closed behaviour working, not a fault.
+  #
+  # No depends_on from the api: compose cannot make a dependency conditional on
+  # a profile, and wiring one would force every plain `up` to wait for clamd.
+  clamav:
+    image: clamav/clamav:stable
+    # The image is published for linux/amd64 only. Without this, it fails on an
+    # Apple Silicon machine with "no matching manifest for linux/arm64/v8" -
+    # which reads like a broken tag rather than a missing architecture. Pinning
+    # it makes Docker Desktop emulate instead; signature loading is slower under
+    # emulation, so give clamd longer to come up.
+    platform: linux/amd64
+    profiles: ["scanning"]
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
 
 volumes:
   wasta-pgdata:

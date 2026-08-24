@@ -4,41 +4,8 @@
     {
       "name": "wasta-api",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": [
-        "run",
-        "--project",
-        "src/Wasta.WebApi/Wasta.WebApi.csproj",
-        "--urls",
-        "http://localhost:5204"
-      ],
-      "port": 5204
-    },
-    {
-      "name": "wasta-devhost",
-      "runtimeExecutable": "dotnet",
-      "runtimeArgs": [
-        "run",
-        "--project",
-        "src/Wasta.DevHost/Wasta.DevHost.csproj",
-        "--urls",
-        "http://localhost:5219"
-      ],
-      "port": 5219
-    },
-    {
-      "name": "wasta-streamlit",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": [
-        "-m",
-        "streamlit",
-        "run",
-        "streamlit/app.py",
-        "--server.port",
-        "8501",
-        "--server.headless",
-        "true"
-      ],
-      "port": 8501
+      "runtimeArgs": ["run", "--project", "src/Wasta.WebApi", "--urls", "http://localhost:5280"],
+      "port": 5280
     }
   ]
 }

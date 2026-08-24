@@ -24,6 +24,8 @@ public sealed record ResetPasswordCommand(string Token, string NewPassword);
 
 public sealed record ConfirmEmailCommand(string Token);
 
+public sealed record ResendEmailVerificationCommand(string Email);
+
 public class RequestEmailVerificationHandler(
     IUserAccountRepository users,
     IAccountTokenRepository tokens,
@@ -56,6 +58,66 @@ public class RequestEmailVerificationHandler(
         var link = $"{links.Value.BaseUrl}{links.Value.VerifyEmailPath}?token={raw}";
         await sender.SendAsync(
             AccountEmails.Message(NotificationKinds.EmailVerification, user.Email, link, user.Language), ct);
+
+        return Result.Success();
+    }
+}
+
+public class ResendEmailVerificationHandler(
+    IUserAccountRepository users,
+    IAccountTokenRepository tokens,
+    ITokenService tokenService,
+    INotificationSender sender,
+    IUnitOfWork unitOfWork,
+    IOptions<AccountLinkOptions> links,
+    IClock clock,
+    ILoggerAdapter? logger = null)
+{
+    /// <summary>
+    /// The unauthenticated way back in.
+    ///
+    /// Sign-in is gated on a confirmed address, which puts the authenticated
+    /// request endpoint out of reach of exactly the people who need it: anyone
+    /// whose link expired, was never delivered, or went to a mistyped address.
+    /// Without this they would be locked out for good, with support as the only
+    /// route back.
+    ///
+    /// Always succeeds, like forgot-password and for the same reason. Reporting
+    /// "no such account" - or "already confirmed" - would make this a membership
+    /// oracle.
+    /// </summary>
+    public async Task<Result> HandleAsync(
+        ResendEmailVerificationCommand command, CancellationToken ct = default)
+    {
+        var email = command.Email.Trim().ToLowerInvariant();
+        var user = await users.FindByEmailAsync(email, ct);
+
+        if (user is null || !user.CanSignIn || user.IsEmailVerified)
+        {
+            return Result.Success();
+        }
+
+        var now = clock.UtcNow;
+        await tokens.InvalidateOutstandingAsync(user.Id, AccountTokenPurpose.EmailVerification, now, ct);
+
+        var (raw, hash) = tokenService.CreateOpaqueToken();
+        tokens.Add(new AccountToken(user.Id, AccountTokenPurpose.EmailVerification, hash, now));
+        await unitOfWork.SaveChangesAsync(ct);
+
+        var link = $"{links.Value.BaseUrl}{links.Value.VerifyEmailPath}?token={raw}";
+
+        // Swallowed for the same reason as forgot-password: this endpoint is
+        // anonymous, and mail only goes to addresses that exist. A provider
+        // outage must not be the thing that tells a stranger so.
+        try
+        {
+            await sender.SendAsync(
+                AccountEmails.Message(NotificationKinds.EmailVerification, user.Email, link, user.Language), ct);
+        }
+        catch (Exception ex)
+        {
+            logger?.Warn("Could not send an email verification link: {Reason}", ex.Message);
+        }
 
         return Result.Success();
     }
@@ -104,7 +166,8 @@ public class ForgotPasswordHandler(
     INotificationSender sender,
     IUnitOfWork unitOfWork,
     IOptions<AccountLinkOptions> links,
-    IClock clock)
+    IClock clock,
+    ILoggerAdapter? logger = null)
 {
     /// <summary>
     /// Always succeeds, whether or not the address is registered.
@@ -131,8 +194,25 @@ public class ForgotPasswordHandler(
         await unitOfWork.SaveChangesAsync(ct);
 
         var link = $"{links.Value.BaseUrl}{links.Value.ResetPasswordPath}?token={raw}";
-        await sender.SendAsync(
-            AccountEmails.Message(NotificationKinds.PasswordReset, user.Email, link, user.Language), ct);
+
+        // A send failure must not change the answer.
+        //
+        // Mail is only ever sent for an address that IS registered, so letting
+        // the exception escape would return 500 for known addresses and 202 for
+        // unknown ones - rebuilding the very membership oracle the uniform 202
+        // exists to prevent, and only while the mail provider is down, which is
+        // exactly when nobody is watching for it.
+        //
+        // The token is already saved, so requesting another link still works.
+        try
+        {
+            await sender.SendAsync(
+                AccountEmails.Message(NotificationKinds.PasswordReset, user.Email, link, user.Language), ct);
+        }
+        catch (Exception ex)
+        {
+            logger?.Warn("Could not send a password reset email: {Reason}", ex.Message);
+        }
 
         return Result.Success();
     }

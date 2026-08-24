@@ -87,6 +87,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 builder.Services.AddExceptionHandler<Wasta.WebApi.DomainExceptionHandler>();
+builder.Services.AddExceptionHandler<Wasta.WebApi.ScannerUnavailableExceptionHandler>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<
     Wasta.Application.Features.Localization.ICurrentLanguage,
@@ -144,6 +145,15 @@ if (app.Environment.IsDevelopment())
         scope.ServiceProvider.GetRequiredService<Wasta.Application.Abstractions.IPasswordHasher>(),
         builder.Configuration["Seed:AdminEmail"],
         builder.Configuration["Seed:AdminPassword"]);
+}
+
+// The demo console in wwwroot. Development serves it automatically; anywhere
+// else it takes an explicit Demo:Enabled, so a real deployment does not put a
+// self-driving walkthrough of the whole product on its front page by accident.
+if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Demo:Enabled"))
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
 }
 
 app.UseAuthentication();

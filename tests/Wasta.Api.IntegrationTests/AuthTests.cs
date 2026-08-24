@@ -28,6 +28,26 @@ public class AuthTests(WastaApiFactory factory)
         return await ReadJson(response);
     }
 
+    /// <summary>
+    /// Sign-in is gated on a confirmed address, so any test that logs in has to
+    /// confirm first - exactly as a real student would.
+    ///
+    /// Deliberately goes through the ANONYMOUS resend: before a successful login
+    /// there is no access token, so the authenticated request endpoint is out of
+    /// reach. Every test that calls this also proves that route back works.
+    /// </summary>
+    private async Task ConfirmEmailAsync(string email)
+    {
+        var resend = await _client.PostAsJsonAsync("/api/auth/verify-email/resend", new { email });
+        Assert.Equal(HttpStatusCode.Accepted, resend.StatusCode);
+
+        var token = CapturingNotificationSender.TokenFrom(factory.Sender.LastTo(email));
+        Assert.False(string.IsNullOrWhiteSpace(token));
+
+        var confirm = await _client.PostAsJsonAsync("/api/auth/verify-email/confirm", new { token });
+        Assert.True(confirm.IsSuccessStatusCode);
+    }
+
     [Fact]
     public async Task Registering_a_seeker_returns_tokens_and_a_seeker_id()
     {
@@ -94,6 +114,7 @@ public class AuthTests(WastaApiFactory factory)
     {
         var email = UniqueEmail("login");
         await RegisterSeekerAsync(email);
+        await ConfirmEmailAsync(email);
 
         var response = await _client.PostAsJsonAsync("/api/auth/login", new { email, password = "Passw0rd123" });
 

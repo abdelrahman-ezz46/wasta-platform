@@ -26,6 +26,12 @@ public static class ProblemMapping
             "auth.invalid_credentials" or "auth.invalid_refresh_token" or "auth.refresh_reused"
                 => (StatusCodes.Status401Unauthorized, "Unauthorized"),
 
+            // 403, not 401: the credentials WERE correct. Retrying them changes
+            // nothing, and a client that reads 401 as "prompt to log in again"
+            // would loop forever. This account needs confirming, not
+            // authenticating.
+            "auth.email_not_verified" => (StatusCodes.Status403Forbidden, "Email not confirmed"),
+
             // State conflicts: the request is well-formed, the resource is not in
             // a state that allows it.
             "attempt.expired" or "attempt.not_in_progress" or "attempt.not_submitted"

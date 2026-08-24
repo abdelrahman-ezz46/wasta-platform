@@ -113,8 +113,18 @@ Status keys used below:
   else unaffected
 - [verified] Upload, signed download, unsigned 404, and the renamed-executable rejection all
   exercised against the running API
-- [blocked] **Uploads are not scanned for malware** — `NoOpVirusScanner` reports every file clean.
-  The host logs a warning on every boot. *Needs a real scanner before public launch*
+- [verified] **ClamAV scanning behind `IVirusScanner`**, off by default and enabled with
+  `VirusScanning:Enabled`. The INSTREAM framing, byte-for-byte delivery across chunk boundaries, and
+  reply parsing are all exercised against a fake clamd; a real-clamd test covering EICAR is gated on
+  `WASTA_CLAMD_PORT` and **skips** rather than passing when it is unset
+- [verified] **The scanner fails closed.** An unreachable clamd raises
+  `VirusScannerUnavailableException`, which the host maps to 503 `file.scanner_unavailable` — never
+  to "clean", and never to `file.infected`, because "the scanner is down" and "your CV is malware"
+  are different things to tell a student
+- [verified] A clamd `ERROR` reply — including its own stream size limit — is never read as clean.
+  The one file too large to inspect is exactly the one that must not slip through
+- [blocked] **Scanning is off until it is switched on in a deployment.** `NoOpVirusScanner` still
+  stands in by default and the host warns on every boot. *Turn it on before public launch*
 
 ## Rate limiting
 
@@ -280,21 +290,46 @@ A pass over the branch's own code — auth, credit spending, uploads, erasure, o
 
 - Both raw-SQL sites use interpolated `FromSql`, which EF parameterises — not injection
 - Every anonymous endpoint is deliberately anonymous: login, register, password reset, email
-  confirmation, signed file download, and reference data for the sign-up form
+  confirmation, confirmation resend, signed file download, and reference data for the sign-up form
 - Ownership is checked against the database on every resource route, and reports 404 rather than 403
+- **Sign-in requires a confirmed email address.** Checked after the password, so naming the reason
+  reveals nothing a wrong guess would not have. Returns 403 with `auth.email_not_verified`, not 401:
+  the credentials were correct, so a client that reads 401 as "prompt again" would loop
+- **An unconfirmed account can always get back in.** Gating sign-in puts the authenticated resend
+  endpoint out of reach of the people who need it, so `POST /api/auth/verify-email/resend` takes an
+  address and no token. It answers 202 whether or not the address is registered, and a test asserts
+  no mail reaches a stranger — the same standard `forgot-password` is held to
 
 **Open, and needing a decision rather than a fix:**
 
-- **Email verification is never enforced.** The machinery works, but `IsEmailVerified` gates
-  nothing: an account registered with someone else's address can use the platform fully. The
-  strongest case for a gate is the talent pool — a company spends real credits to unlock a
-  candidate whose address was never confirmed. Where to put the gate changes the signup funnel, so
-  it is a product decision, not a code one
 - **An access token outlives a logout or an erasure by up to 15 minutes.** Inherent to a stateless
   token; the short lifetime is the mitigation. Revoking sooner needs a denylist and a lookup on
   every request
 - **CORS is not configured at all**, so no browser on another origin can call this API. That is the
   safe default rather than a hole, but it blocks the frontend until an allowed origin is set
+
+**Deliberately off, pending a legal position:**
+
+- **The two AI modules are disabled in the platform API** (`Ai:Enabled: false`), and this is a
+  decision rather than an unfinished wire-up. The Career Coach sends assessment scores and student
+  context; Support Chat sends conversation history. Groq and Gemini are US services, so either is a
+  cross-border transfer of hiring-relevant personal data out of Egypt, which Egypt's PDPL (Law
+  151/2020, executive regulations from 1 November 2025) requires a prior PDPC licence or the data
+  subject's specific consent to do. Enforcement is expected from **31 October 2026**
+- Both modules degrade gracefully with it off: the coach records the plan as skipped, and chat
+  returns its static "provider unavailable" reply. Neither invents an answer, and the dev fixture
+  provider lives in `Wasta.DevHost` only, so it cannot serve stand-in text from the platform API
+
+**Verified when a real mail provider is wired in:**
+
+- [verified] **A mail outage does not reveal who is registered.** Mail is only ever attempted for an
+  address that exists, so a send failure escaping `forgot-password` or `verify-email/resend` would
+  answer 500 for registered addresses and 202 for everyone else — reopening the membership oracle
+  the uniform 202 exists to close, and only while the provider is down. Both handlers swallow send
+  failures and log them; the token is already stored, so requesting another link still works.
+  **Verified by removing the catch**: the two responses then differed
+- [verified] The SES sender logs the SES message id and never the recipient. The development
+  stand-in logs addresses deliberately; a sender that runs where logs are kept must not
 
 > **Verification and reset emails bypass the notification outbox on purpose.** The outbox persists a
 > payload, and the payload would have to carry the raw token — queueing these would put a bearer

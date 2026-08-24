@@ -30,6 +30,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<RefreshHandler>();
         services.AddScoped<LogoutHandler>();
         services.AddScoped<RequestEmailVerificationHandler>();
+        services.AddScoped<ResendEmailVerificationHandler>();
         services.AddScoped<ConfirmEmailHandler>();
         services.AddScoped<ForgotPasswordHandler>();
         services.AddScoped<ResetPasswordHandler>();

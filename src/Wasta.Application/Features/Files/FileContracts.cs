@@ -62,6 +62,19 @@ public sealed record ScanResult(bool IsClean, string? Detail)
 /// implementation in this repo: shipping something that returns "clean" without
 /// scanning would be worse than having nothing, because it would look handled.
 /// </summary>
+/// <summary>
+/// Thrown when a scanner cannot be reached, or answers with something we cannot
+/// read.
+///
+/// Deliberately an exception rather than a not-clean <see cref="ScanResult"/>.
+/// "The scanner is down" and "this file is malware" are different facts, and
+/// reporting the first as the second tells a student their CV is infected when
+/// nothing ever looked at it. A genuine fault throws; an expected outcome is a
+/// Result.
+/// </summary>
+public sealed class VirusScannerUnavailableException(string message, Exception? inner = null)
+    : Exception(message, inner);
+
 public interface IVirusScanner
 {
     Task<ScanResult> ScanAsync(Stream content, CancellationToken ct = default);

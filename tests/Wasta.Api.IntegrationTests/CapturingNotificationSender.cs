@@ -14,8 +14,19 @@ public sealed class CapturingNotificationSender : INotificationSender
 
     public bool IsRealSender => false;
 
+    /// <summary>
+    /// Simulates a mail provider outage. Set for a single test, in a collection
+    /// that runs sequentially, and reset in a finally.
+    /// </summary>
+    public bool ThrowOnSend { get; set; }
+
     public Task SendAsync(OutboundMessage message, CancellationToken ct = default)
     {
+        if (ThrowOnSend)
+        {
+            throw new InvalidOperationException("Simulated mail provider outage.");
+        }
+
         _sent.Enqueue(message);
         return Task.CompletedTask;
     }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Amazon.SimpleEmailV2;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -77,9 +78,20 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<Application.Features.Files.IFileStore, LocalFileStore>();
         services.AddSingleton<Application.Features.Files.IFileUrlSigner, HmacFileUrlSigner>();
 
-        // Placeholder. The startup check warns on every boot that uploads are
-        // not actually being scanned.
-        services.AddSingleton<Application.Features.Files.IVirusScanner, NoOpVirusScanner>();
+        services.Configure<ClamAvOptions>(configuration.GetSection(ClamAvOptions.SectionName));
+
+        // Real scanning is opt-in, and enabling it without a reachable clamd
+        // stops uploads rather than letting them through unscanned. Left off,
+        // the no-op stands in and the startup check says so on every boot.
+        if (configuration.GetValue<bool>($"{ClamAvOptions.SectionName}:Enabled"))
+        {
+            services.AddSingleton<Application.Features.Files.IVirusScanner, ClamAvVirusScanner>();
+        }
+        else
+        {
+            services.AddSingleton<Application.Features.Files.IVirusScanner, NoOpVirusScanner>();
+        }
+
         services.AddHostedService<VirusScannerStartupCheck>();
 
         services.Configure<NotificationDispatcherOptions>(
@@ -90,10 +102,34 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<Application.Features.Notifications.INotificationQueries, NotificationQueries>();
         services.AddScoped<Application.Features.Notifications.INotificationRepository, NotificationRepository>();
 
-        // Writes to the log rather than sending. The startup check says so.
         services.Configure<LoggingNotificationSenderOptions>(
             configuration.GetSection(LoggingNotificationSenderOptions.SectionName));
-        services.AddSingleton<Application.Features.Notifications.INotificationSender, LoggingNotificationSender>();
+        services.Configure<SesNotificationSenderOptions>(
+            configuration.GetSection(SesNotificationSenderOptions.SectionName));
+
+        if (configuration.GetValue<bool>($"{SesNotificationSenderOptions.SectionName}:Enabled"))
+        {
+            var email = configuration.GetSection(SesNotificationSenderOptions.SectionName)
+                .Get<SesNotificationSenderOptions>() ?? new SesNotificationSenderOptions();
+
+            // Fail at startup rather than at the first password reset. An unset
+            // value binds as "" and would otherwise reach SES as an empty sender.
+            if (string.IsNullOrWhiteSpace(email.FromAddress))
+            {
+                throw new InvalidOperationException(
+                    "Email:Enabled is on but Email:FromAddress is empty. Set it to an SES-verified "
+                    + "sender identity.");
+            }
+
+            services.AddSingleton<IAmazonSimpleEmailServiceV2>(_ => new AmazonSimpleEmailServiceV2Client(
+                Amazon.RegionEndpoint.GetBySystemName(email.Region)));
+            services.AddSingleton<Application.Features.Notifications.INotificationSender, SesNotificationSender>();
+        }
+        else
+        {
+            // Writes to the log rather than sending. The startup check says so.
+            services.AddSingleton<Application.Features.Notifications.INotificationSender, LoggingNotificationSender>();
+        }
         services.AddHostedService<NotificationSenderStartupCheck>();
         services.AddHostedService<NotificationDispatcher>();
 

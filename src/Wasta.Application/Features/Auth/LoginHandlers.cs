@@ -47,6 +47,17 @@ public class LoginHandler(
             return InvalidCredentials();
         }
 
+        // Checked after the password, deliberately. By this point the caller has
+        // already proved they know it, so naming the reason reveals nothing a
+        // wrong guess would not have - and staying vague here only sends a
+        // student to support instead of to their inbox.
+        if (!user.IsEmailVerified)
+        {
+            return Result.Failure<AuthResult>(
+                "auth.email_not_verified",
+                "Confirm your email address before signing in. We can send a new link.");
+        }
+
         var now = clock.UtcNow;
         long? seekerId = null;
         long? companyId = null;
