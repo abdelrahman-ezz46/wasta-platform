@@ -17,7 +17,7 @@ on a track (see MinimumCohortForPercentile), because a percentile drawn from a
 handful of attempts is a lie. Seeding fewer than that leaves the score card
 showing a blank percentile, which looks like a bug and is not.
 
-    WASTA_ADMIN_PASSWORD=... python3 scripts/seed-demo.py [--base http://localhost:5280]
+    WASTA_ADMIN_PASSWORD=... python3 scripts/seed-demo.py [--base http://localhost:5204]
 
 Registering dozens of accounts in seconds trips the sign-in rate limit, which
 defaults to 10/minute. appsettings.Development.json is deliberately untracked
@@ -116,7 +116,7 @@ def confirm_demo_emails():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base", default="http://localhost:5280")
+    parser.add_argument("--base", default="http://localhost:5204")
     parser.add_argument("--cohort", type=int, default=64)
     parser.add_argument("--admin-email", default="admin@wasta.demo")
     parser.add_argument(

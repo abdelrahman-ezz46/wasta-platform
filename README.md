@@ -9,7 +9,41 @@ application:
 - **Support Chatbot** — answers "how does this work" questions from a curated knowledge base, with
   cross-visit memory for logged-in students and job recommendations sourced from the host app.
 
-## Run the board demo
+## Run the app
+
+A working web application, served by the API itself at `/`. Sign up as a student or a company, sit
+a real assessment, browse the talent pool, spend credits to unlock a candidate, post jobs and apply
+to them.
+
+```bash
+docker compose up -d
+dotnet ef database update --project src/Wasta.Infrastructure --startup-project src/Wasta.Infrastructure
+dotnet user-secrets set "Jwt:SigningKey" "<48+ random chars>" --project src/Wasta.WebApi
+dotnet user-secrets set "Seed:AdminEmail" "admin@wasta.demo" --project src/Wasta.WebApi
+dotnet user-secrets set "Seed:AdminPassword" "<choose one>" --project src/Wasta.WebApi
+dotnet run --project src/Wasta.WebApi
+```
+
+Open <http://localhost:5204/>.
+
+**Confirming an email without a mail provider.** Signing in requires a confirmed address, and on a
+laptop nothing sends mail. The app therefore ships a **dev mailbox** at `#/mailbox` that captures
+what would have been emailed, with a one-click confirmation link. It is registered only in the
+Development environment — the endpoint does not exist in any other build.
+
+Optional, to fill the talent pool and make percentiles appear:
+
+```bash
+WASTA_ADMIN_PASSWORD='<the one you chose>' python3 scripts/seed-demo.py
+```
+
+The cohort size matters: a percentile is withheld below 50 scored attempts on a track, so a smaller
+seed leaves the score card blank — which looks like a bug and is not.
+
+> **Assessment content is still placeholder.** The platform and scoring pipeline are real; the
+> questions are seeded stand-ins awaiting a subject-matter expert per track.
+
+## Run the guided walkthrough
 
 A guided walkthrough of the whole product, served by the API itself at `/`. Every step is a real
 HTTP call against the running service — a student registers, sits a scored assessment, appears
@@ -21,10 +55,10 @@ dotnet ef database update --project src/Wasta.Infrastructure --startup-project s
 dotnet user-secrets set "Jwt:SigningKey" "<48+ random chars>" --project src/Wasta.WebApi
 dotnet user-secrets set "Seed:AdminEmail" "admin@wasta.demo" --project src/Wasta.WebApi
 dotnet user-secrets set "Seed:AdminPassword" "<choose one>" --project src/Wasta.WebApi
-dotnet run --project src/Wasta.WebApi --urls http://localhost:5280
+dotnet run --project src/Wasta.WebApi
 ```
 
-Then, in a second terminal, build the demo dataset and open the console:
+Then, in a second terminal, build the demo dataset:
 
 ```bash
 python3 scripts/seed-demo.py
@@ -34,7 +68,8 @@ python3 scripts/seed-demo.py
 size is the point**: a percentile is withheld below 50 scored attempts on a track, so seeding fewer
 leaves the score card blank — which looks like a bug and is not.
 
-Open <http://localhost:5280/> and press **Run the full journey**.
+Open <http://localhost:5204/demo.html> and press **Run the full journey**. It narrates the same
+journey the app performs, showing each real HTTP call and response — useful for a technical audience.
 
 > The demo console is served in Development automatically. Anywhere else it needs an explicit
 > `Demo:Enabled`, so a deployment does not put a walkthrough of the whole product on its front page.

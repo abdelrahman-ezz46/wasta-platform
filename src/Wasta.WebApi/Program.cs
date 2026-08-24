@@ -114,6 +114,17 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// Local mail catcher. Registered after AddWastaInfrastructure so it REPLACES
+// the sender that call registered - and only in Development, so there is no
+// build of this application in which captured tokens are readable in
+// production.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSingleton<DevMailbox>();
+    builder.Services.AddSingleton<Wasta.Application.Features.Notifications.INotificationSender>(
+        sp => sp.GetRequiredService<DevMailbox>());
+}
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();
@@ -153,7 +164,18 @@ if (app.Environment.IsDevelopment())
 if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Demo:Enabled"))
 {
     app.UseDefaultFiles();
-    app.UseStaticFiles();
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        OnPrepareResponse = ctx =>
+        {
+            // Development only. Without this the browser serves a cached app.js
+            // after an edit, and you debug code that is no longer running.
+            if (ctx.Context.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment())
+            {
+                ctx.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+            }
+        }
+    });
 }
 
 app.UseAuthentication();
@@ -179,6 +201,16 @@ app.MapFileEndpoints();
 app.MapNotificationEndpoints();
 app.MapLocalizationEndpoints();
 app.MapAccountEndpoints();
+
+if (app.Environment.IsDevelopment())
+{
+    // Reading this returns live verification and password-reset tokens, so it
+    // exists only where the mailbox itself does.
+    app.MapGet("/api/dev/mailbox", (DevMailbox mailbox) => Results.Ok(mailbox.Messages))
+        .AllowAnonymous()
+        .WithTags("Development")
+        .WithSummary("Messages the app would have emailed. Development only.");
+}
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok" }))
     .WithTags("Health")

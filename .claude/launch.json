@@ -4,8 +4,8 @@
     {
       "name": "wasta-api",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Wasta.WebApi", "--urls", "http://localhost:5280"],
-      "port": 5280
+      "runtimeArgs": ["run", "--project", "src/Wasta.WebApi"],
+      "port": 5204
     }
   ]
 }
