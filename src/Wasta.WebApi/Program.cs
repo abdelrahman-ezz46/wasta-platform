@@ -201,6 +201,7 @@ app.MapFileEndpoints();
 app.MapNotificationEndpoints();
 app.MapLocalizationEndpoints();
 app.MapAccountEndpoints();
+app.MapPublicEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

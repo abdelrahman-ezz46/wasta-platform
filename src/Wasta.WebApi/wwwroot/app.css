@@ -321,3 +321,135 @@ ul.plain li{padding-left:2px}
   .score{grid-template-columns:1fr;gap:18px}
   .bar-row{grid-template-columns:104px 1fr 78px}
 }
+
+/* ============ landing page ============
+   Follows the team's Figma: serif display against the Inter body, the warm
+   wash behind the hero, two-tone headline, and the floating score badge. */
+.lp{min-height:100vh;background:var(--ground)}
+.lp-nav{
+  position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--ground) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid transparent;
+  display:flex;align-items:center;gap:26px;padding:14px 34px;
+}
+.lp-nav .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;color:var(--ink)}
+.lp-nav .brand .mark{
+  width:26px;height:26px;border-radius:50%;background:var(--brand-solid);color:#fff;
+  display:grid;place-items:center;font-size:11px;font-weight:800;
+}
+.lp-nav .links{display:flex;gap:22px}
+.lp-nav .links a{font-size:14px;font-weight:550;color:var(--ink-soft)}
+.lp-nav .links a:hover{color:var(--ink);text-decoration:none}
+.lp-nav .spacer{flex:1}
+.lp-nav .right{display:flex;align-items:center;gap:14px}
+
+.lp-hero{position:relative;overflow:hidden}
+/* The warm bloom behind the hero, top-right in the design. */
+.lp-hero::before{
+  content:"";position:absolute;inset:-20% -10% auto auto;width:70%;height:150%;
+  background:radial-gradient(closest-side, color-mix(in srgb,var(--brand-200) 55%,transparent), transparent 70%);
+  opacity:.55;pointer-events:none;
+}
+.lp-inner{max-width:1180px;margin:0 auto;padding:56px 34px 40px;position:relative}
+.lp-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+
+.lp-pill{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:99px;
+  background:var(--brand-100);color:var(--brand-800);
+  font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+}
+.lp-h1{
+  font-family:Fraunces,Georgia,"Times New Roman",serif;
+  font-size:clamp(40px,5.2vw,64px);line-height:1.04;font-weight:700;
+  letter-spacing:-.02em;margin:22px 0 0;text-wrap:balance;color:var(--ink);
+}
+.lp-h1 em{
+  font-style:normal;display:block;
+  background:linear-gradient(90deg,var(--brand-600),var(--brand-400));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.lp-sub{margin:20px 0 0;font-size:17px;line-height:1.6;color:var(--ink-soft);max-width:34rem}
+.lp-cta{display:flex;flex-wrap:wrap;gap:13px;margin-top:28px}
+
+.lp-stats{display:flex;align-items:center;gap:26px;margin-top:34px;flex-wrap:wrap}
+.lp-stat .n{font-size:24px;font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums}
+.lp-stat .l{font-size:11.5px;color:var(--ink-faint);font-weight:600;margin-top:1px}
+.lp-sep{width:1px;height:38px;background:var(--line-strong)}
+
+.lp-shot{position:relative}
+.lp-shot img{
+  width:100%;height:auto;display:block;border-radius:var(--r-xl);
+  box-shadow:var(--shadow-pop);border:1px solid var(--line);
+  background:linear-gradient(135deg,var(--brand-100),var(--sec-100));  /* if the photo cannot load */
+  min-height:280px;object-fit:cover;
+}
+.lp-badge{
+  position:absolute;left:-16px;bottom:34px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-pop);
+  padding:11px 15px;display:flex;align-items:center;gap:11px;
+}
+.lp-badge .ic{
+  width:30px;height:30px;border-radius:9px;background:var(--brand-solid);color:#fff;
+  display:grid;place-items:center;font-size:14px;
+}
+.lp-badge .n{font-size:16px;font-weight:750;color:var(--ink)}
+.lp-badge .l{font-size:10.5px;color:var(--ink-faint);font-weight:600}
+
+.lp-trust{border-block:1px solid var(--line);background:var(--card)}
+.lp-trust .in{max-width:1180px;margin:0 auto;padding:20px 34px;display:flex;
+  align-items:center;justify-content:center;gap:34px;flex-wrap:wrap}
+.lp-trust .lbl{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.lp-trust .co{font-size:14px;font-weight:600;color:var(--ink-soft)}
+
+.lp-sec{max-width:1180px;margin:0 auto;padding:64px 34px}
+.lp-eyebrow{
+  display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--brand-ink);
+}
+.lp-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--brand-solid)}
+.lp-h2{
+  font-family:Fraunces,Georgia,serif;font-size:clamp(28px,3.4vw,40px);font-weight:700;
+  letter-spacing:-.02em;margin:14px 0 0;color:var(--ink);text-wrap:balance;
+}
+.lp-lede{margin:12px 0 0;color:var(--ink-soft);font-size:16px;max-width:44rem}
+
+.lp-feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:16px;margin-top:34px}
+.lp-feat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:22px;box-shadow:var(--shadow-card)}
+.lp-feat .ic{
+  width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:17px;
+  background:var(--brand-50);color:var(--brand-ink);margin-bottom:13px;
+}
+.lp-feat h3{font-size:15.5px}
+.lp-feat p{margin:7px 0 0;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+
+.lp-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:34px}
+.lp-step{position:relative;padding-top:8px}
+.lp-step .num{
+  font-family:Fraunces,Georgia,serif;font-size:34px;font-weight:700;
+  color:var(--brand-200);line-height:1;
+}
+.lp-step h3{margin-top:10px;font-size:17px}
+.lp-step p{margin:7px 0 0;font-size:14px;color:var(--ink-soft)}
+
+.lp-tracks{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.lp-track{
+  background:var(--card);border:1px solid var(--line-strong);border-radius:99px;
+  padding:9px 17px;font-size:14px;font-weight:550;color:var(--ink-2);
+}
+.lp-end{
+  max-width:1180px;margin:0 auto 64px;padding:44px 34px;border-radius:var(--r-xl);
+  background:linear-gradient(135deg,var(--brand-700),var(--brand-800));color:#fff;text-align:center;
+}
+.lp-end h2{font-family:Fraunces,Georgia,serif;font-size:clamp(26px,3.2vw,36px);color:#fff}
+.lp-end p{margin:12px auto 0;max-width:34rem;opacity:.85;font-size:15.5px}
+.lp-end .row{justify-content:center;margin-top:24px}
+.lp-end .btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
+.lp-end .btn-ghost:hover{background:rgba(255,255,255,.12);border-color:#fff}
+.lp-foot{padding:0 34px 44px;text-align:center;color:var(--ink-faint);font-size:12.5px}
+
+@media(max-width:900px){
+  .lp-grid{grid-template-columns:1fr;gap:34px}
+  .lp-nav .links{display:none}
+  .lp-inner,.lp-sec{padding-left:20px;padding-right:20px}
+  .lp-badge{left:auto;right:14px;bottom:14px}
+}

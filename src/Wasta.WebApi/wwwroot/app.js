@@ -138,7 +138,7 @@ async function render() {
     catch (e) { host.innerHTML = `<div class="note note-err">${esc(e.message || String(e))}</div>`; }
     return;
   }
-  go(session.get() ? homeFor(session.role) : "#/login");
+  go(session.get() ? homeFor(session.role) : "#/");
 }
 
 const homeFor = role => role === "Company" ? "#/company" : role === "Admin" ? "#/admin" : "#/me";
@@ -156,8 +156,14 @@ function chrome() {
   // card rather than the portal shell. The path check matters: a session can
   // outlive the account it refers to (a reset database, a deleted user), and
   // rendering a sidebar around a sign-in form is the visible symptom of that.
-  const signedOutPage = ["/login", "/register", "/forgot", "/verify", "/mailbox"]
+  const signedOutPage = ["/login", "/register", "/forgot", "/verify"]
     .some(p => path === p || path.startsWith(p + "/"));
+
+  // The landing page is full-bleed and brings its own navigation.
+  if (path === "/" || path === "") {
+    $("#shell").innerHTML = `<div id="view"></div>`;
+    return;
+  }
 
   if (!s || signedOutPage) {
     $("#shell").innerHTML =
@@ -232,6 +238,123 @@ function head(title, sub) {
 /* =====================================================================
    AUTH
    ===================================================================== */
+route(/^\/$/, async host => {
+  // Counts come from the API rather than the design's placeholders. A landing
+  // page that claims traction the platform does not have is the first thing a
+  // sceptical visitor will check.
+  const stats = (await api("GET", "/api/public/stats", undefined, { anon: true })).data
+             || { candidates: 0, companies: 0, tracks: 0 };
+  const ref = await reference();
+
+  const features = [
+    ["◎", "Skill assessments", "Timed, track-specific evaluations that measure what someone can actually do, scored identically for everyone."],
+    ["◈", "The Wasta Score", "One number with a per-section breakdown and a percentile — withheld entirely until enough people have sat the track for it to mean something."],
+    ["☺", "Anonymous first", "Companies browse by track and score. Names, emails and phone numbers are absent from the response, not hidden in it."],
+    ["✓", "Verified companies", "Every employer is reviewed by an administrator before they can see a single candidate."],
+  ];
+  const steps = [
+    ["01", "Prove it", "Sit the assessment for your track and earn a Wasta Score you keep."],
+    ["02", "Get discovered", "Verified companies find you by skill, without seeing who you are."],
+    ["03", "Get hired", "A company spends a credit to unlock your details and reach out."],
+  ];
+
+  host.innerHTML = `
+  <div class="lp">
+    <nav class="lp-nav">
+      <span class="brand"><span class="mark">W</span>Wasta</span>
+      <span class="links">
+        <a href="#how">How it works</a><a href="#tracks">Tracks</a>
+        <a href="#students">For students</a><a href="#companies">For companies</a>
+      </span>
+      <span class="spacer"></span>
+      <span class="right">
+        ${themeButton()}
+        <a class="small" href="#/login">Log in</a>
+        <a class="btn btn-sm" href="#/register">Get started →</a>
+      </span>
+    </nav>
+
+    <header class="lp-hero"><div class="lp-inner"><div class="lp-grid">
+      <div>
+        <span class="lp-pill">✦ Talent, measured by merit</span>
+        <h1 class="lp-h1">Where skill speaks <em>before the résumé.</em></h1>
+        <p class="lp-sub">Wasta scores students on real skills and connects them with verified
+          companies — anonymously, until it is a match.</p>
+        <div class="lp-cta">
+          <a class="btn" href="#/register">I'm looking for a job</a>
+          <a class="btn-ghost" href="#/register">I'm hiring</a>
+        </div>
+        <div class="lp-stats">
+          <div class="lp-stat"><div class="n">${stats.candidates}</div><div class="l">candidates scored</div></div>
+          <span class="lp-sep"></span>
+          <div class="lp-stat"><div class="n">${stats.companies}</div><div class="l">companies</div></div>
+          <span class="lp-sep"></span>
+          <div class="lp-stat"><div class="n">${stats.tracks}</div><div class="l">tracks</div></div>
+        </div>
+      </div>
+      <div class="lp-shot">
+        <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&h=680&fit=crop"
+             alt="Students working together at laptops" loading="eager" />
+        <div class="lp-badge">
+          <span class="ic">✦</span>
+          <span><span class="n">Wasta Score</span><div class="l">scored, not claimed</div></span>
+        </div>
+      </div>
+    </div></div></header>
+
+    <div class="lp-trust"><div class="in">
+      <span class="lbl">Built for teams hiring in Egypt</span>
+      ${["Nile Tech","Delta Analytics","Sahara Cloud","Cairo Labs","Levant Digital"]
+        .map(c => `<span class="co">${esc(c)}</span>`).join("")}
+    </div></div>
+
+    <section class="lp-sec" id="students">
+      <span class="lp-eyebrow">Why Wasta</span>
+      <h2 class="lp-h2">Hiring, rebuilt around proof</h2>
+      <p class="lp-lede">Nine in ten Egyptians say jobs come through connections, and more than eight in ten
+        unemployed Egyptians already hold a qualification. The degree stopped being a signal. This is the
+        replacement.</p>
+      <div class="lp-feats">
+        ${features.map(([i,t,d]) => `
+          <div class="lp-feat"><div class="ic">${i}</div><h3>${esc(t)}</h3><p>${esc(d)}</p></div>`).join("")}
+      </div>
+    </section>
+
+    <section class="lp-sec" id="how">
+      <span class="lp-eyebrow">How it works</span>
+      <h2 class="lp-h2">Three steps, one score</h2>
+      <div class="lp-steps">
+        ${steps.map(([n,t,d]) => `
+          <div class="lp-step"><div class="num">${n}</div><h3>${esc(t)}</h3><p>${esc(d)}</p></div>`).join("")}
+      </div>
+    </section>
+
+    <section class="lp-sec" id="tracks">
+      <span class="lp-eyebrow">Tracks</span>
+      <h2 class="lp-h2">Pick the one you want to be measured in</h2>
+      <div class="lp-tracks">
+        ${(ref.tracks || []).map(t => `<span class="lp-track">${esc(t.name)}</span>`).join("")}
+      </div>
+    </section>
+
+    <section class="lp-end" id="companies">
+      <h2>Stop reading CVs. Start reading results.</h2>
+      <p>Browse candidates by track and score, see the work they submitted, and pay one credit only for
+        the person you actually want to contact.</p>
+      <div class="row">
+        <a class="btn-ghost" href="#/register">Create a company account</a>
+        <a class="btn" style="background:#fff;color:var(--brand-800)" href="#/login">Log in</a>
+      </div>
+    </section>
+
+    <footer class="lp-foot">
+      Wasta · skills assessment and anonymous hiring for Egypt · students never pay to be seen
+    </footer>
+  </div>`;
+
+  wireTheme();
+});
+
 route(/^\/login$/, async host => {
   host.innerHTML = `
     <div class="auth-wrap">
@@ -370,17 +493,91 @@ route(/^\/verify$/, async host => {
        <p class="small">Links expire and can only be used once. Request a fresh one from the sign-in page.</p>`;
 });
 
-/* Local mail catcher — Development only; the endpoint does not exist elsewhere. */
+/* Local mail catcher and operator console — Development only; the endpoint
+   behind it does not exist in any other build. Everything an operator has to
+   switch on by hand lives here, so it does not have to be hunted for across
+   three screens. */
 route(/^\/mailbox$/, async host => {
   const r = await api("GET", "/api/dev/mailbox", undefined, { anon: true });
   if (r.status === 404) {
-    host.innerHTML = head("Dev mailbox") +
+    host.innerHTML = head("Developer tools") +
       `<div class="note note-warn">Not available. This exists only when the API runs in Development.</div>`;
     return;
   }
+
   const msgs = r.data || [];
-  host.innerHTML = head("Dev mailbox", "Messages the app would have emailed. Development only — never present in a deployment.") +
-    (msgs.length ? msgs.map(m => `
+  const admin = isAdmin();
+
+  // Only an administrator can act on these, so only fetch them for one.
+  let pendingCompanies = [], pendingTopups = [], stats = null;
+  if (admin) {
+    const [c, t, st] = await Promise.all([
+      api("GET", "/api/admin/companies/pending?page=1&pageSize=25"),
+      api("GET", "/api/admin/topups/pending?page=1&pageSize=25"),
+      api("GET", "/api/admin/coach-plans/stats"),
+    ]);
+    pendingCompanies = c.data?.items || [];
+    pendingTopups = t.data?.items || [];
+    stats = st.data;
+  }
+
+  host.innerHTML = head("Developer tools",
+      "Everything that has to be switched on by hand, in one place. Development only.") +
+    `<div id="msg"></div>` +
+
+    (admin ? `
+    <div class="card">
+      <div class="between"><h3>Companies awaiting approval</h3>
+        <span class="pill">${pendingCompanies.length}</span></div>
+      ${pendingCompanies.length ? `<table><tbody>
+        ${pendingCompanies.map(c => `<tr>
+          <td><strong>${esc(c.name)}</strong><div class="tiny muted">${esc(c.email || "")}</div></td>
+          <td class="right"><button class="btn btn-sm" data-approve="${c.companyId}">Approve</button></td>
+        </tr>`).join("")}</tbody></table>`
+        : `<div class="empty">Nothing waiting.</div>`}
+    </div>
+
+    <div class="card">
+      <div class="between"><h3>Credit requests</h3>
+        <span class="pill">${pendingTopups.length}</span></div>
+      ${pendingTopups.length ? `<table><tbody>
+        ${pendingTopups.map(t => `<tr>
+          <td><strong>${t.creditsRequested} credits</strong>
+            <div class="tiny muted">${esc(t.companyName || "company #" + t.companyId)} · ${fmt(t.amount)} ${esc(t.currency || "")}</div></td>
+          <td class="right"><button class="btn btn-sm" data-issue="${t.requestId || t.id}">Confirm &amp; issue</button></td>
+        </tr>`).join("")}</tbody></table>`
+        : `<div class="empty">Nothing waiting.</div>`}
+    </div>
+
+    <div class="card">
+      <h3>Career Coach</h3>
+      <p class="small muted">Plans are written once, in the background. A plan recorded while coaching was
+        switched off stays skipped until it is asked for again.</p>
+      ${stats ? `<div class="row" style="margin:10px 0 14px">
+        ${Object.entries(stats.by_status || {}).map(([k, v]) =>
+          `<span class="pill ${k === "Ready" ? "pill-ok" : k === "Failed" ? "pill-warn" : ""}">${esc(k)} ${v}</span>`).join("")}
+        ${Object.entries(stats.by_provider || {}).map(([k, v]) =>
+          `<span class="pill pill-accent">served by ${esc(k)}: ${v}</span>`).join("")}
+        ${(stats.top_validation_failures || []).map(f =>
+          `<span class="pill pill-warn">rejected: ${esc(f.rule)} ×${f.count}</span>`).join("")}
+      </div>` : ""}
+      <div class="row">
+        <div style="flex:1;min-width:180px"><label>Attempt id</label>
+          <input id="attempt-id" type="number" placeholder="e.g. 2" /></div>
+        <button class="btn" id="regen" style="margin-top:20px">Regenerate plan</button>
+      </div>
+      <div class="hint">Takes a few seconds. If the model's answer breaks a rule it is rejected and nothing
+        is shown — ask again.</div>
+    </div>` : `
+    <div class="note note-info">
+      Sign in as an administrator to approve companies, issue credits and regenerate coach plans from here.
+    </div>`) +
+
+    `<div class="card">
+       <div class="between"><h3>Captured email</h3><span class="pill">${msgs.length}</span></div>
+       <p class="small muted">Nothing is actually sent on a laptop. Confirmation and reset links land here.</p>
+     </div>
+     ${msgs.length ? msgs.map(m => `
       <div class="card">
         <div class="between">
           <div><strong>${esc(m.subject)}</strong><div class="small muted">to ${esc(m.recipient)}</div></div>
@@ -388,7 +585,32 @@ route(/^\/mailbox$/, async host => {
         </div>
         <pre class="tiny mono" style="white-space:pre-wrap;margin:10px 0 0;color:var(--ink-soft)">${esc(m.body)}</pre>
       </div>`).join("")
-    : `<div class="card empty">Nothing captured yet. Register an account or request a reset link.</div>`);
+      : `<div class="card empty">Nothing captured yet. Register an account or request a reset link.</div>`}`;
+
+  host.querySelectorAll("[data-approve]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    const res = await api("POST", `/api/admin/companies/${b.dataset.approve}/approve`);
+    note("#msg", res.ok ? "ok" : "err", res.ok ? "Company approved." : errText(res));
+    render();
+  });
+  host.querySelectorAll("[data-issue]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    const res = await api("POST", `/api/admin/topups/${b.dataset.issue}/review`,
+      { approve: true, note: "Bank transfer confirmed." });
+    note("#msg", res.ok ? "ok" : "err", res.ok ? "Credits issued." : errText(res));
+    render();
+  });
+  const rg = $("#regen");
+  if (rg) rg.onclick = async () => {
+    const id = $("#attempt-id").value.trim();
+    if (!id) return note("#msg", "warn", "Enter the attempt id to regenerate.");
+    rg.disabled = true;
+    const res = await api("POST", `/api/admin/coach-plans/${id}/regenerate`);
+    rg.disabled = false;
+    note("#msg", res.ok ? "ok" : "err",
+      res.ok ? `Queued for attempt ${id}. Give it a few seconds, then reload this page to see the counts move.`
+             : errText(res));
+  };
 });
 
 /* =====================================================================
