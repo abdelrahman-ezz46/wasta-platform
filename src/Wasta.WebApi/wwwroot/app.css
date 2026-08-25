@@ -256,3 +256,8 @@ tr:last-child td{border-bottom:none}
 
 /* Secondary-tinted panels, used by the coach's interview line. */
 :root{ --sec-50:#EAF4F3; --sec-200:#A8D3CF; }
+
+/* Lists that carry their own marker. Without this the browser adds a disc on
+   top of the "•" or "✦" already in the text, and every item shows two. */
+ul.plain{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+ul.plain li{padding-left:2px}
