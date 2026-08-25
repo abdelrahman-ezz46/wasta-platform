@@ -595,19 +595,29 @@ route(/^\/coach$/, async host => {
   const d = r.data || {};
 
   if (d.status !== "ready") {
-    // "pending" means it is being written. "unavailable" means there is no
-    // scored attempt yet, or the model's answer was rejected by the guardrails.
+    // The API reports "unavailable" for three different situations - no
+    // assessment sat, a plan that was skipped, and a plan the guardrails
+    // rejected - so the client cannot tell them apart and must not guess.
+    // Saying "sit an assessment first" to someone who already has is worse
+    // than saying less.
     const pending = d.status === "pending";
     host.innerHTML = head("Career Coach", "A study plan written from your own section scores.") +
       `<div class="card">
          <div class="note ${pending ? "note-info" : "note-warn"}">
            ${pending
              ? "Your plan is being written now. It is generated once, in the background, so it never holds up your results."
-             : "No plan yet. Sit an assessment first — the coach works from your section scores, so it has nothing to work from until then."}
+             : "No plan is ready for your latest assessment."}
          </div>
-         ${pending
-           ? `<button class="btn" id="again">Check again</button>`
-           : `<a class="btn" href="#/assessment">Go to assessment</a>`}
+         ${pending ? "" : `<p class="small muted">This happens for one of two reasons. Either you have not sat an
+           assessment yet — the coach works from your section scores, so it has nothing to work from. Or a plan was
+           attempted and not produced: coaching was switched off at the time, or the model's answer broke one of the
+           rules it is checked against and was rejected.</p>`}
+         <div class="row" style="margin-top:12px">
+           ${pending
+             ? `<button class="btn" id="again">Check again</button>`
+             : `<a class="btn" href="#/assessment">Sit an assessment</a>
+                <button class="btn-ghost" id="again">Check again</button>`}
+         </div>
        </div>`;
     const b = $("#again");
     if (b) b.onclick = () => render();
