@@ -4,6 +4,11 @@
    the company side, cream page background, Inter, rounded-xl, soft shadows. */
 
 :root{
+  /* This is a light-only design. Saying so stops the browser applying its own
+     auto-dark treatment on a dark-mode machine, which washes every colour out
+     to grey and is not something the page can otherwise detect or correct. */
+  color-scheme: light;
+
   /* Primary accent — CTAs, active nav, a small number of highlights. */
   --brand-50:#F1EEFF; --brand-100:#E4DEFF; --brand-200:#CCC0FF;
   --brand-400:#8F72FF; --brand-500:#8767FF; --brand-600:#6D4AFF;
@@ -220,7 +225,10 @@ tr:last-child td{border-bottom:none}
 
 /* ---------- signed-out pages ---------- */
 .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 20px}
-.auth-wrap{width:100%;max-width:436px}
+/* margin-inline is load-bearing: the flex centring belongs to #view, which is
+   wider than this card so the dev mailbox fits. Without it the card sits
+   against the left edge of that wider box, not in the middle of the page. */
+.auth-wrap{width:100%;max-width:436px;margin-inline:auto}
 .auth-brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:22px}
 .auth-brand .mark{
   width:36px;height:36px;border-radius:50%;background:var(--brand-600);color:#fff;
@@ -245,3 +253,6 @@ tr:last-child td{border-bottom:none}
 /* Signed-out pages that are not a login form - the dev mailbox - need more
    room than a 436px auth card. The card itself stays narrow via .auth-wrap. */
 .auth-page > #view{width:100%;max-width:780px}
+
+/* Secondary-tinted panels, used by the coach's interview line. */
+:root{ --sec-50:#EAF4F3; --sec-200:#A8D3CF; }
