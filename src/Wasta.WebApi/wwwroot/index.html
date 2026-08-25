@@ -3,18 +3,24 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="color-scheme" content="light" />
 <title>Wasta</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <script>
+  // Apply the stored theme before the first paint. Doing this from app.js
+  // instead would render the other theme for a frame and flash.
+  try {
+    var t = localStorage.getItem("wasta.theme");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+  } catch (e) { /* private mode: fall through to the system preference */ }
+
   // Cache-bust the stylesheet and script.
   //
   // This app is served only in Development or behind an explicit Demo:Enabled,
   // and a browser holding a stale app.js means debugging code that is no longer
   // running - which cost real time here once. Correctness beats caching.
-  const v = Date.now();
+  var v = Date.now();
   document.write(
     '<link rel="stylesheet" href="/app.css?v=' + v + '" />' +
     '<scr' + 'ipt src="/app.js?v=' + v + '" defer><\/scr' + 'ipt>');

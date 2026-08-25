@@ -5,6 +5,41 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = n => (n === null || n === undefined) ? "—" : n;
 
+/* ---------------- theme ----------------
+   Three states, not two. No stored choice means "follow the system", which is
+   what most people never change - so the toggle sets an explicit choice and
+   only then stamps data-theme on the root. index.html applies the stored value
+   before first paint, so switching does not flash the other theme. */
+const theme = {
+  get(){ return localStorage.getItem("wasta.theme"); },
+  system(){ return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; },
+  effective(){ return this.get() || this.system(); },
+  apply(){
+    const choice = this.get();
+    if (choice) document.documentElement.setAttribute("data-theme", choice);
+    else document.documentElement.removeAttribute("data-theme");
+  },
+  toggle(){
+    localStorage.setItem("wasta.theme", this.effective() === "dark" ? "light" : "dark");
+    this.apply();
+  },
+};
+
+/** The control. Labelled with the theme it switches TO, not the current one. */
+function themeButton(extraClass = "") {
+  const next = theme.effective() === "dark" ? "light" : "dark";
+  return `<button class="theme-btn ${extraClass}" id="theme-toggle"
+                  title="Switch to ${next} mode" aria-label="Switch to ${next} mode">
+            <span class="ic" aria-hidden="true">${next === "dark" ? "☾" : "☀"}</span>
+            ${next === "dark" ? "Dark" : "Light"}
+          </button>`;
+}
+
+function wireTheme() {
+  const b = $("#theme-toggle");
+  if (b) b.onclick = () => { theme.toggle(); render(); };
+}
+
 /* ---------------- session ---------------- */
 const session = {
   get()  { try { return JSON.parse(localStorage.getItem("wasta.session")); } catch { return null; } },
@@ -125,7 +160,9 @@ function chrome() {
     .some(p => path === p || path.startsWith(p + "/"));
 
   if (!s || signedOutPage) {
-    $("#shell").innerHTML = `<div class="auth-page"><div id="view"></div></div>`;
+    $("#shell").innerHTML =
+      `<div class="auth-page">${themeButton("auth-theme")}<div id="view"></div></div>`;
+    wireTheme();
     return;
   }
 
@@ -171,11 +208,14 @@ function chrome() {
         <div class="topstrip">
           <span class="title">${esc(portal)}</span>
           <span class="spacer"></span>
+          ${themeButton()}
           <a class="small muted" href="#/mailbox">Dev mailbox</a>
         </div>
         <div class="wrap"><div id="view"></div></div>
       </div>
     </div>`;
+
+  wireTheme();
 
   $("#signout").onclick = async () => {
     const t = session.get()?.refreshToken;
